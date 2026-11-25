@@ -1,0 +1,3060 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArmoniaPlay — Lucio Ardito</title>
+  <meta name="description" content="ArmoniaPlay di Lucio Ardito — Software locale per riprodurre playlist musicali con 5 regole: no-repeat, alternanza M/F, armonia Camelot, curva BPM/energia e separazione artista." />
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #ffffff; --content: #f0f2f5; --border: #dcdfe6;
+      --fg: #14171f; --muted: #5c6475; --primary: #1d4ed8; --primary-fg: #ffffff;
+      --success: #15803d; --warning: #b45309; --error: #b91c1c;
+      --male: #2563eb; --female: #db2777; --duet: #0d9488;
+      --radius: 10px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111318; --card: #181b22; --content: #20242e; --border: #2c3240;
+        --fg: #edf0f5; --muted: #98a2b3; --primary: #3b82f6; --primary-fg: #ffffff;
+        --success: #4ade80; --warning: #fbbf24; --error: #f87171;
+        --male: #60a5fa; --female: #f472b6; --duet: #2dd4bf;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.45; }
+    .container { max-width: 1260px; margin: 0 auto; padding: 18px 20px; }
+    .header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon { width: 38px; height: 38px; border-radius: 9px; background: var(--primary); color: var(--primary-fg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+    .subtitle { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    button, select, input[type="text"], input[type="number"] { font-family: inherit; font-size: 12px; color: var(--fg); }
+    .btn { padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: opacity 0.15s, background-color 0.15s; }
+    .btn:hover { background: var(--content); }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary); opacity: 0.9; }
+    .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; }
+    .hidden { display: none !important; }
+    .status-bar { padding: 9px 12px; margin-bottom: 14px; border-radius: 8px; font-size: 12px; background: var(--card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+    @media (min-width: 960px) { .grid { grid-template-columns: 5fr 7fr; } }
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .card-flush { padding: 0; overflow: hidden; }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--muted); margin: 0; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border-radius: 5px; font-size: 11.5px; background: var(--content); border: 1px solid var(--border); white-space: nowrap; }
+    .badge-btn { cursor: pointer; font-weight: 500; }
+    .badge-btn:hover { opacity: 0.85; }
+    .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+    .viz-box { height: 56px; border-radius: 8px; background: var(--content); border: 1px solid var(--border); overflow: hidden; margin: 10px 0; }
+    .chart-box { height: 90px; border-radius: 8px; background: var(--content); border: 1px solid var(--border); padding: 4px 8px; margin-top: 8px; }
+    canvas { width: 100%; height: 100%; display: block; }
+    input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+    .rule-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; background: var(--content); border: 1px solid var(--border); font-size: 12px; cursor: pointer; }
+    .rule-box { padding: 8px 10px; border-radius: 8px; background: var(--content); border: 1px solid var(--border); font-size: 12px; display: flex; flex-direction: column; gap: 7px; }
+    .rule-desc { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+    .select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    select, input[type="text"], input[type="number"] { padding: 5px 7px; border-radius: 6px; background: var(--card); border: 1px solid var(--border); }
+    .tabs { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 0; border-bottom: 1px solid var(--border); }
+    .tab-btns { display: flex; gap: 4px; }
+    .tab-btn { padding: 8px 12px; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; font-weight: 500; color: var(--muted); }
+    .tab-btn.active { border-bottom-color: var(--primary); color: var(--fg); font-weight: 600; }
+    .panel { padding: 12px; }
+    .list { display: flex; flex-direction: column; gap: 7px; max-height: 660px; overflow-y: auto; padding-right: 3px; }
+    .track-card { padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); display: flex; flex-direction: column; gap: 6px; }
+    .track-card:hover, .track-card.is-next { background: var(--content); }
+    .track-main { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .track-info { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; cursor: pointer; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .track-title { font-size: 12.5px; font-weight: 600; }
+    .track-artist { font-size: 11.5px; color: var(--muted); }
+    .pills { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .drop-banner { padding: 12px; border-radius: 8px; background: var(--content); border: 1px dashed var(--border); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+    .drag-active { outline: 2px dashed var(--primary); outline-offset: -4px; }
+    .camelot-wrap { display: flex; justify-content: center; padding: 6px 0; }
+    .camelot-slice { cursor: pointer; transition: opacity 0.15s; }
+    .camelot-slice:hover { opacity: 0.9; }
+    .ok-text { color: var(--success); }
+    .warn-text { color: var(--warning); border-color: var(--warning); }
+    .progress-track { width: 100%; height: 6px; border-radius: 99px; background: var(--border); overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
+    .cover-wrap { position: relative; width: 84px; height: 84px; border-radius: 9px; overflow: hidden; border: 1px solid var(--border); background: var(--content); flex-shrink: 0; cursor: pointer; }
+    .cover-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cover-wrap:hover::after { content: "⤢"; position: absolute; inset: 0; background: rgba(0,0,0,0.36); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .cover-modal { position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.68); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .cover-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; max-width: 360px; width: 100%; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+    .cover-modal-card img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+    .voice-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; max-width: 640px; width: 100%; max-height: 86vh; display: flex; flex-direction: column; gap: 12px; }
+    .voice-modal-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; max-height: 330px; padding-right: 4px; }
+    .voice-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--content); }
+    .v-seg { display: inline-flex; gap: 3px; flex-shrink: 0; }
+    .v-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; font-size: 11.5px; font-weight: 600; transition: all 0.12s; }
+    .v-btn:hover { color: var(--fg); }
+    .v-btn.active-M { background: var(--male); border-color: var(--male); color: #fff; }
+    .v-btn.active-F { background: var(--female); border-color: var(--female); color: #fff; }
+    .v-btn.active-D { background: var(--duet); border-color: var(--duet); color: #fff; }
+    .v-btn.active-I { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+    .lang-switch { display: inline-flex; align-items: center; border-radius: 7px; border: 1px solid var(--border); background: var(--content); padding: 2px; gap: 2px; }
+    .lang-btn { padding: 4px 8px; border-radius: 5px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; transition: background-color 0.15s, color 0.15s; }
+    .lang-btn:hover { color: var(--fg); }
+    .lang-btn.active { background: var(--primary); color: var(--primary-fg); }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 3v6M12 15v6M3 12h6M15 12h6"></path>
+          </svg>
+        </div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+            <h1>ArmoniaPlay</h1>
+            <span style="font-size:12px;color:var(--muted);font-weight:500;">Lucio Ardito</span>
+          </div>
+          <p class="subtitle" data-i18n="subtitle">No-Repeat · Alternanza M/F · Armonia Camelot · BPM/Energia · Separazione Artista</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.m4a,.aac" multiple class="hidden" />
+        <input id="folderInput" type="file" webkitdirectory directory multiple class="hidden" />
+        <input id="importJsonInput" type="file" accept=".json" class="hidden" />
+        <button id="btnAddFiles" class="btn btn-primary" data-i18n="btnAddFiles">+ Carica File Audio</button>
+        <button id="btnAddFolder" class="btn" data-i18n="btnAddFolder">Carica Cartella</button>
+        <button id="btnExportM3u" class="btn" data-i18n="btnExportM3u">Esporta .m3u</button>
+        <button id="btnExportJson" class="btn" data-i18n="btnExportJson">Salva Tag</button>
+        <button id="btnImportJson" class="btn" data-i18n="btnImportJson">Importa Tag</button>
+        <div class="lang-switch" role="group" aria-label="Lingua / Language" data-i18n-title="langSwitchTitle" title="Lingua: Italiano / English">
+          <button id="btnLangIt" type="button" class="lang-btn active" data-lang="it" aria-pressed="true">IT</button>
+          <button id="btnLangEn" type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="statusBanner" class="status-bar hidden">
+      <span id="statusText"></span>
+      <button id="btnDismissStatus" class="btn" style="padding:2px 7px;">✕</button>
+    </div>
+
+    <main class="grid">
+      <!-- LEFT -->
+      <div class="stack">
+        <section class="card">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div id="coverWrap" class="cover-wrap" data-i18n-title="coverWrapTitle" title="Clicca per ingrandire o personalizzare la copertina">
+              <img id="nowCover" data-i18n-alt="nowCoverAlt" alt="Copertina brano in esecuzione" />
+            </div>
+            <div style="min-width:0;flex:1;">
+              <div class="row-between" style="align-items:flex-start;margin-bottom:4px;">
+                <div class="pills">
+                  <span id="nowSourceBadge" class="badge">Demo</span>
+                  <span id="nowVoiceBadge"></span>
+                  <span id="nowKeyBadge" class="badge mono">—</span>
+                  <span id="nowBpmBadge" class="badge mono" style="color:var(--muted);">—</span>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                  <div style="font-size:10.5px;color:var(--muted);" data-i18n="session">Sessione</div>
+                  <div id="sessionCounter" class="mono" style="font-size:13px;font-weight:600;">0 / 0</div>
+                </div>
+              </div>
+              <div id="nowTitle" class="truncate" style="font-size:16px;font-weight:600;">Pronto per iniziare</div>
+              <div id="nowArtist" class="truncate" style="font-size:12px;color:var(--muted);">Premi Riproduci o carica i tuoi brani locali</div>
+            </div>
+          </div>
+
+          <div id="activeTransitionStrip" class="pills" style="margin-top:10px;"></div>
+          <div class="viz-box"><canvas id="visualizer"></canvas></div>
+          <input id="seekBar" type="range" min="0" max="1000" value="0" />
+          <div class="row-between mono" style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">
+            <span id="timeCurrent">0:00</span><span id="timeTotal">0:00</span>
+          </div>
+
+          <div class="row-between">
+            <div class="pills">
+              <button id="btnPrev" class="btn btn-icon" data-i18n-title="prevTitle" title="Precedente">⏮</button>
+              <button id="btnPlayPause" class="btn btn-primary" style="min-width:105px;justify-content:center;">▶ Riproduci</button>
+              <button id="btnNext" class="btn btn-icon" data-i18n-title="nextTitle" title="Successivo">⏭</button>
+              <button id="btnReshuffle" class="btn" data-i18n="btnReshuffle">Rigenera</button>
+            </div>
+            <div class="pills" style="gap:6px;">
+              <span style="font-size:12px;color:var(--muted);" data-i18n="volLabel">Vol</span>
+              <input id="volumeSlider" type="range" min="0" max="100" value="80" style="width:74px;" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card stack" style="gap:9px;">
+          <div class="row-between">
+            <h2 class="section-title" data-i18n="rulesTitle">Regole di Riproduzione (5)</h2>
+            <span id="complianceBadge" class="badge mono">100% conformità</span>
+          </div>
+
+          <label class="rule-item">
+            <div><strong data-i18n="rule1Title">1. Non ripetere il brano</strong><div class="rule-desc" data-i18n="rule1Desc">Ogni brano viene eseguito una sola volta nel ciclo</div></div>
+            <input id="ruleNoRepeat" type="checkbox" checked />
+          </label>
+
+          <label class="rule-item">
+            <div><strong data-i18n="rule2Title">2. Alterna voci Maschili / Femminili</strong><div class="rule-desc" data-i18n="rule2Desc">Alternanza M → F → M → F (Duetto/Strum. ponte)</div></div>
+            <input id="ruleAlternateVoice" type="checkbox" checked />
+          </label>
+
+          <div class="rule-box">
+            <label class="row-between" style="cursor:pointer;">
+              <div><strong data-i18n="rule3Title">3. Logica di tonalità (Camelot)</strong><div class="rule-desc" data-i18n="rule3Desc">Transizioni armoniche sul Circolo delle Quinte</div></div>
+              <input id="ruleHarmonic" type="checkbox" checked />
+            </label>
+            <div class="select-grid">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="harmonyStrategyLabel">Strategia Armonica</div>
+                <select id="harmonyMode" style="width:100%;">
+                  <option value="camelot_classic" data-i18n="harmony_camelot_classic">Camelot Classica (±1 / Rel.)</option>
+                  <option value="camelot_extended" data-i18n="harmony_camelot_extended">Camelot Estesa (+2 / Diag.)</option>
+                  <option value="camelot_ascending" data-i18n="harmony_camelot_ascending">Progressione (+1 / +2)</option>
+                  <option value="same_mode_fifths" data-i18n="harmony_same_mode_fifths">Circolo Quinte (stesso modo)</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="crossfadeLabel">Crossfade Audio</div>
+                <select id="crossfadeSec" style="width:100%;">
+                  <option value="0" data-i18n="cf_0">Disattivato (0s)</option>
+                  <option value="2" selected data-i18n="cf_2">Morbido (2s)</option>
+                  <option value="4" data-i18n="cf_4">Radio (4s)</option>
+                  <option value="6" data-i18n="cf_6">DJ Blend (6s)</option>
+                  <option value="8" data-i18n="cf_8">Lungo (8s)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="rule-box">
+            <label class="row-between" style="cursor:pointer;">
+              <div><strong data-i18n="rule4Title">4. Regole BPM / Energia</strong><div class="rule-desc" data-i18n="rule4Desc">Controlla salti di tempo e andamento energetico (incl. ½/2x)</div></div>
+              <input id="ruleBpm" type="checkbox" checked />
+            </label>
+            <div class="select-grid">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="energyCurveLabel">Curva Energetica</div>
+                <select id="energyFlow" style="width:100%;">
+                  <option value="smooth" selected data-i18n="flow_smooth">Fluida (±Δ BPM)</option>
+                  <option value="ramp_up" data-i18n="flow_ramp_up">Crescendo (Warm-up)</option>
+                  <option value="ramp_down" data-i18n="flow_ramp_down">Decrescendo (Cool-down)</option>
+                  <option value="wave" data-i18n="flow_wave">Onda Energetica (Picco 65%)</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="bpmToleranceLabel">Tolleranza BPM</div>
+                <select id="maxBpmDelta" style="width:100%;">
+                  <option value="8" data-i18n="bpmTol_8">Stretta (±8 BPM)</option>
+                  <option value="12" selected data-i18n="bpmTol_12">Bilanciata (±12 BPM)</option>
+                  <option value="18" data-i18n="bpmTol_18">Ampia (±18 BPM)</option>
+                  <option value="25" data-i18n="bpmTol_25">Libera (±25 BPM)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="rule-box">
+            <label class="row-between" style="cursor:pointer;">
+              <div><strong data-i18n="rule5Title">5. Distanza minima stesso artista</strong><div class="rule-desc" data-i18n="rule5Desc">Evita brani ravvicinati dello stesso artista (anche "feat.")</div></div>
+              <input id="ruleArtistSep" type="checkbox" checked />
+            </label>
+            <div class="row-between" style="font-size:12px;">
+              <span style="color:var(--muted);" data-i18n="minArtistGapLabel">Brani minimi di altri artisti in mezzo:</span>
+              <select id="minArtistGap" class="mono">
+                <option value="1" data-i18n="gap_1">≥ 1 (mai consecutivi)</option>
+                <option value="2" data-i18n="gap_2">≥ 2 brani</option>
+                <option value="3" selected data-i18n="gap_3">≥ 3 brani</option>
+                <option value="4" data-i18n="gap_4">≥ 4 brani</option>
+                <option value="5" data-i18n="gap_5">≥ 5 brani</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="select-grid" style="font-size:12px;color:var(--muted);">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input id="optStrictStop" type="checkbox" /> <span data-i18n="optStrictStop">Ferma se nessun brano valido</span></label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input id="optAutoCycle" type="checkbox" /> <span data-i18n="optAutoCycle">Nuovo ciclo a fine playlist</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="row-between">
+            <div>
+              <h2 class="section-title" data-i18n="camelotTitle">Ruota di Camelot</h2>
+              <div style="font-size:11.5px;color:var(--muted);" data-i18n="camelotSub">Esterno: Maggiori (B) · Interno: Minori (A)</div>
+            </div>
+            <button id="btnClearKeyFilter" class="btn hidden" style="padding:4px 8px;"></button>
+          </div>
+          <div class="camelot-wrap"><svg id="camelotWheel" viewBox="0 0 320 320" style="width:100%;max-width:255px;height:auto;"></svg></div>
+        </section>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="stack">
+        <section class="card" style="padding:13px 15px;">
+          <div class="row-between">
+            <div class="pills">
+              <h2 class="section-title" data-i18n="bpmChartTitle">Curva BPM & Energia</h2>
+              <span id="bpmRangeBadge" class="mono" style="font-size:12px;color:var(--muted);">—</span>
+            </div>
+            <span id="artistSepSummary" style="font-size:12px;color:var(--muted);">—</span>
+          </div>
+          <div class="chart-box"><svg id="bpmChart" viewBox="0 0 600 84" preserveAspectRatio="none" style="width:100%;height:100%;"></svg></div>
+        </section>
+
+        <section id="dropZone" class="card card-flush">
+          <div class="tabs">
+            <div class="tab-btns">
+              <button id="tabQueue" class="tab-btn active"><span data-i18n="tabQueue">Coda Intelligente</span> <span id="queueCountPill" class="mono">0</span></button>
+              <button id="tabLibrary" class="tab-btn"><span data-i18n="tabLibrary">Libreria & Tag</span> <span id="libCountPill" class="mono">0</span></button>
+              <button id="tabHistory" class="tab-btn"><span data-i18n="tabHistory">Già Riprodotti</span> <span id="histCountPill" class="mono">0</span></button>
+            </div>
+            <div id="voiceBalanceSummary" class="mono" style="font-size:12px;color:var(--muted);padding-bottom:8px;">—</div>
+          </div>
+
+          <div id="panelQueue" class="panel">
+            <div id="queueNotice" class="hidden" style="padding:8px 10px;margin-bottom:10px;border-radius:7px;background:var(--content);border:1px solid var(--border);font-size:12px;color:var(--muted);"></div>
+            <div id="queueList" class="list"></div>
+          </div>
+
+          <div id="panelLibrary" class="panel hidden">
+            <div class="drop-banner">
+              <div>
+                <strong data-i18n="dropTitle">Trascina qui i tuoi file audio locali</strong> (.mp3, .wav, .flac, .ogg, .m4a)<br />
+                <span style="color:var(--muted);"><span data-i18n="filenameTagsLabel">Tag nome file:</span> <code class="mono" data-i18n="filenameTagsExample">Artista - Titolo [F] [8A] [112bpm] [E4].mp3</code></span>
+              </div>
+              <div class="pills">
+                <button id="btnAnalyzeAll" class="btn" data-i18n="btnAnalyzeAll">Analizza Audio Auto</button>
+                <button id="btnLoadDemo" class="btn" data-i18n="btnLoadDemo">Ripristina Demo</button>
+                <button id="btnClearLib" class="btn" data-i18n="btnClearLib">Svuota</button>
+              </div>
+            </div>
+
+            <div id="analysisProgressWrap" class="hidden" style="padding:8px 10px;margin-bottom:10px;border-radius:7px;background:var(--content);border:1px solid var(--border);">
+              <div class="row-between" style="font-size:12px;margin-bottom:5px;">
+                <span id="analysisLabel" data-i18n="analysisDefault">Analisi tonalità, BPM ed energia...</span>
+                <span id="analysisPercent" class="mono">0%</span>
+              </div>
+              <div class="progress-track"><div id="analysisBar" class="progress-fill"></div></div>
+            </div>
+
+            <div class="pills" style="margin-bottom:10px;">
+              <input id="libSearch" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="Cerca titolo, artista, tonalità o BPM..." style="flex:1;min-width:170px;" />
+              <select id="libVoiceFilter">
+                <option value="ALL" data-i18n="voiceFilterAll">Tutte le voci</option>
+                <option value="M" data-i18n="voiceFilterM">Solo Maschili (M)</option>
+                <option value="F" data-i18n="voiceFilterF">Solo Femminili (F)</option>
+                <option value="D" data-i18n="voiceFilterD">Duetti (D)</option>
+                <option value="I" data-i18n="voiceFilterI">Strumentali (I)</option>
+              </select>
+            </div>
+            <div id="libraryList" class="list"></div>
+          </div>
+
+          <div id="panelHistory" class="panel hidden">
+            <div class="row-between" style="margin-bottom:10px;font-size:12px;">
+              <span style="color:var(--muted);" data-i18n="historyDesc">Brani bloccati da No-Repeat e usati per la separazione artista.</span>
+              <button id="btnResetHistory" class="btn" data-i18n="btnResetHistory">Azzera Cronologia</button>
+            </div>
+            <div id="historyList" class="list"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);">
+      <span>ArmoniaPlay · <strong style="color:var(--fg);font-weight:500;">Lucio Ardito</strong></span>
+      <span data-i18n="footerTagline">Riproduzione locale 100% offline · 5 regole armoniche, vocali, BPM e artista</span>
+    </footer>
+  </div>
+
+  <div id="coverModal" class="cover-modal hidden">
+    <div class="cover-modal-card">
+      <img id="modalCoverImg" data-i18n-alt="modalCoverAlt" alt="Copertina ingrandita" />
+      <div>
+        <div id="modalCoverTitle" style="font-weight:600;font-size:15px;"></div>
+        <div id="modalCoverArtist" style="font-size:12px;color:var(--muted);"></div>
+      </div>
+      <div class="pills" style="justify-content:center;">
+        <input id="customCoverInput" type="file" accept="image/*" class="hidden" />
+        <button id="btnChangeCover" class="btn" data-i18n="btnChangeCover">Cambia Copertina</button>
+        <button id="btnCloseCoverModal" class="btn btn-primary" data-i18n="btnClose">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="voiceConfirmModal" class="cover-modal hidden">
+    <div class="voice-modal-card">
+      <div class="row-between">
+        <div>
+          <div id="voiceModalTitle" style="font-weight:600;font-size:15px;" data-i18n="voiceModalTitleDefault">Conferma tipo di voce</div>
+          <div id="voiceModalSub" style="font-size:12px;color:var(--muted);" data-i18n="voiceModalSub">Scegli subito se i file o la cartella sono Maschili (M), Femminili (F), Duetto (D) o Strumentale (I)</div>
+        </div>
+        <button id="btnVoiceModalCancelX" class="btn" style="padding:3px 8px;">✕</button>
+      </div>
+
+      <div style="padding:10px;border-radius:9px;background:var(--content);border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11.5px;color:var(--muted);font-weight:600;" data-i18n="voiceModalBulkLabel">Applica a tutti i brani caricati:</div>
+        <div class="pills">
+          <button type="button" class="btn" data-bulk-voice="M"><span class="dot" style="background:var(--male)"></span><span data-i18n="bulkM">Tutti Maschili (M)</span></button>
+          <button type="button" class="btn" data-bulk-voice="F"><span class="dot" style="background:var(--female)"></span><span data-i18n="bulkF">Tutti Femminili (F)</span></button>
+          <button type="button" class="btn" data-bulk-voice="D"><span class="dot" style="background:var(--duet)"></span><span data-i18n="bulkD">Tutti Duetti (D)</span></button>
+          <button type="button" class="btn" data-bulk-voice="I"><span class="dot" style="background:var(--muted)"></span><span data-i18n="bulkI">Tutti Strumentali (I)</span></button>
+        </div>
+        <div id="voiceModalFolders" class="hidden" style="display:flex;flex-direction:column;gap:5px;padding-top:6px;border-top:1px solid var(--border);"></div>
+      </div>
+
+      <div id="voiceModalList" class="voice-modal-list"></div>
+
+      <div class="row-between" style="padding-top:8px;border-top:1px solid var(--border);">
+        <span id="voiceModalCounts" class="mono" style="font-size:12px;color:var(--muted);">—</span>
+        <div class="pills">
+          <button id="btnVoiceModalCancel" class="btn" data-i18n="btnCancel">Annulla</button>
+          <button id="btnVoiceModalConfirm" class="btn btn-primary" data-i18n="btnConfirmLoad">Conferma e Carica</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="deckA" preload="metadata"></audio>
+  <audio id="deckB" preload="metadata"></audio>
+
+  <!-- Inlined HarmonicEngine (Standalone Offline Build) -->
+  <script>
+/**
+ * ArmoniaPlay — Harmonic Playlist Engine v2
+ * Lucio Ardito 2026
+ * Motore di pianificazione musicale locale con 5 regole integrate:
+ * 1. Nessuna ripetizione brano (No-Repeat)
+ * 2. Alternanza voci Maschili / Femminili (con supporto Duetto/Strumentale)
+ * 3. Logica di tonalità (Ruota di Camelot / Circolo delle Quinte)
+ * 4. Logica BPM / Energia (continuità, crescendo, decrescendo, onda energetica)
+ * 5. Distanza minima tra brani dello stesso artista (separazione radiofonica)
+ * + Parser ID3v2, parser metadati da nome file, rilevatore tonale/BPM/energia, export M3U
+ */
+
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.HarmonicEngine = factory();
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // Mappa completa della Ruota di Camelot (24 tonalità)
+  const CAMELOT_KEYS = [
+    { code: '1A',  num: 1,  letter: 'A', mode: 'minor', pitchClass: 8,  intl: 'Ab min', it: 'Sol# min', aliases: ['abm', 'g#m', 'ab min', 'g# min', 'ab minor', 'g# minor', 'sol# min', 'lab min'] },
+    { code: '1B',  num: 1,  letter: 'B', mode: 'major', pitchClass: 11, intl: 'B maj',  it: 'Si magg',  aliases: ['b', 'bmaj', 'b maj', 'b major', 'si', 'si magg'] },
+    { code: '2A',  num: 2,  letter: 'A', mode: 'minor', pitchClass: 3,  intl: 'Eb min', it: 'Mib min',  aliases: ['ebm', 'd#m', 'eb min', 'd# min', 'eb minor', 'd# minor', 'mib min', 're# min'] },
+    { code: '2B',  num: 2,  letter: 'B', mode: 'major', pitchClass: 6,  intl: 'F# maj', it: 'Fa# magg', aliases: ['f#', 'gb', 'f#maj', 'gbmaj', 'f# maj', 'gb maj', 'f# major', 'fa# magg', 'solb magg'] },
+    { code: '3A',  num: 3,  letter: 'A', mode: 'minor', pitchClass: 10, intl: 'Bb min', it: 'Sib min',  aliases: ['bbm', 'a#m', 'bb min', 'a# min', 'bb minor', 'a# minor', 'sib min', 'la# min'] },
+    { code: '3B',  num: 3,  letter: 'B', mode: 'major', pitchClass: 1,  intl: 'Db maj', it: 'Reb magg', aliases: ['db', 'c#', 'dbmaj', 'c#maj', 'db maj', 'c# maj', 'db major', 'reb magg', 'do# magg'] },
+    { code: '4A',  num: 4,  letter: 'A', mode: 'minor', pitchClass: 5,  intl: 'F min',  it: 'Fa min',   aliases: ['fm', 'f min', 'f minor', 'fa min'] },
+    { code: '4B',  num: 4,  letter: 'B', mode: 'major', pitchClass: 8,  intl: 'Ab maj', it: 'Lab magg', aliases: ['ab', 'g#', 'abmaj', 'g#maj', 'ab maj', 'ab major', 'lab magg', 'sol# magg'] },
+    { code: '5A',  num: 5,  letter: 'A', mode: 'minor', pitchClass: 0,  intl: 'C min',  it: 'Do min',   aliases: ['cm', 'c min', 'c minor', 'do min'] },
+    { code: '5B',  num: 5,  letter: 'B', mode: 'major', pitchClass: 3,  intl: 'Eb maj', it: 'Mib magg', aliases: ['eb', 'd#', 'ebmaj', 'eb maj', 'eb major', 'mib magg'] },
+    { code: '6A',  num: 6,  letter: 'A', mode: 'minor', pitchClass: 7,  intl: 'G min',  it: 'Sol min',  aliases: ['gm', 'g min', 'g minor', 'sol min'] },
+    { code: '6B',  num: 6,  letter: 'B', mode: 'major', pitchClass: 10, intl: 'Bb maj', it: 'Sib magg', aliases: ['bb', 'a#', 'bbmaj', 'bb maj', 'bb major', 'sib magg'] },
+    { code: '7A',  num: 7,  letter: 'A', mode: 'minor', pitchClass: 2,  intl: 'D min',  it: 'Re min',   aliases: ['dm', 'd min', 'd minor', 're min'] },
+    { code: '7B',  num: 7,  letter: 'B', mode: 'major', pitchClass: 5,  intl: 'F maj',  it: 'Fa magg',  aliases: ['f', 'fmaj', 'f maj', 'f major', 'fa', 'fa magg'] },
+    { code: '8A',  num: 8,  letter: 'A', mode: 'minor', pitchClass: 9,  intl: 'A min',  it: 'La min',   aliases: ['am', 'a min', 'a minor', 'la min'] },
+    { code: '8B',  num: 8,  letter: 'B', mode: 'major', pitchClass: 0,  intl: 'C maj',  it: 'Do magg',  aliases: ['c', 'cmaj', 'c maj', 'c major', 'do', 'do magg'] },
+    { code: '9A',  num: 9,  letter: 'A', mode: 'minor', pitchClass: 4,  intl: 'E min',  it: 'Mi min',   aliases: ['em', 'e min', 'e minor', 'mi min'] },
+    { code: '9B',  num: 9,  letter: 'B', mode: 'major', pitchClass: 7,  intl: 'G maj',  it: 'Sol magg', aliases: ['g', 'gmaj', 'g maj', 'g major', 'sol', 'sol magg'] },
+    { code: '10A', num: 10, letter: 'A', mode: 'minor', pitchClass: 11, intl: 'B min',  it: 'Si min',   aliases: ['bm', 'b min', 'b minor', 'si min'] },
+    { code: '10B', num: 10, letter: 'B', mode: 'major', pitchClass: 2,  intl: 'D maj',  it: 'Re magg',  aliases: ['d', 'dmaj', 'd maj', 'd major', 're', 're magg'] },
+    { code: '11A', num: 11, letter: 'A', mode: 'minor', pitchClass: 6,  intl: 'F# min', it: 'Fa# min',  aliases: ['f#m', 'gbm', 'f# min', 'gb min', 'f# minor', 'fa# min'] },
+    { code: '11B', num: 11, letter: 'B', mode: 'major', pitchClass: 9,  intl: 'A maj',  it: 'La magg',  aliases: ['a', 'amaj', 'a maj', 'a major', 'la', 'la magg'] },
+    { code: '12A', num: 12, letter: 'A', mode: 'minor', pitchClass: 1,  intl: 'C# min', it: 'Do# min',  aliases: ['c#m', 'dbm', 'c# min', 'db min', 'c# minor', 'do# min', 'reb min'] },
+    { code: '12B', num: 12, letter: 'B', mode: 'major', pitchClass: 4,  intl: 'E maj',  it: 'Mi magg',  aliases: ['e', 'emaj', 'e maj', 'e major', 'mi', 'mi magg'] }
+  ];
+
+  const KEY_BY_CODE = Object.create(null);
+  const KEY_LOOKUP = Object.create(null);
+  CAMELOT_KEYS.forEach((k) => {
+    KEY_BY_CODE[k.code] = k;
+    KEY_LOOKUP[k.code.toLowerCase()] = k.code;
+    KEY_LOOKUP[k.intl.toLowerCase()] = k.code;
+    KEY_LOOKUP[k.it.toLowerCase()] = k.code;
+    k.aliases.forEach((a) => {
+      KEY_LOOKUP[a.toLowerCase()] = k.code;
+    });
+  });
+
+  function getKeyInfo(code) {
+    if (!code) return null;
+    const norm = normalizeKey(code);
+    return norm ? KEY_BY_CODE[norm] : null;
+  }
+
+  function normalizeKey(input) {
+    if (!input || typeof input !== 'string') return null;
+    const cleaned = input.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (KEY_LOOKUP[cleaned]) return KEY_LOOKUP[cleaned];
+    const matchCamelot = cleaned.match(/^0?([1-9]|1[0-2])([ab])$/i);
+    if (matchCamelot) {
+      return `${parseInt(matchCamelot[1], 10)}${matchCamelot[2].toUpperCase()}`;
+    }
+    return null;
+  }
+
+  function wrapCamelot(n) {
+    return ((n - 1) % 12 + 12) % 12 + 1;
+  }
+
+  function camelotStepDelta(fromNum, toNum) {
+    let diff = (toNum - fromNum + 12) % 12;
+    if (diff > 6) diff -= 12;
+    return diff;
+  }
+
+  /**
+   * Normalizza il nome dell'artista principale per il confronto di separazione artista.
+   * Es: "Marco Conti feat. Elena Rinaldi" -> "marco conti"
+   */
+  function normalizeArtistName(artist) {
+    if (!artist || typeof artist !== 'string') return '';
+    return artist
+      .toLowerCase()
+      .split(/\s+(?:feat\.?|ft\.?|featuring|with|con|vs\.?|x)\s+|[,;&]/i)[0]
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Stima livello energia (1..5) dal BPM se non fornito esplicitamente
+   */
+  function estimateEnergyFromBpm(bpm) {
+    const b = Number(bpm) || 100;
+    if (b < 86) return 1;
+    if (b < 100) return 2;
+    if (b < 114) return 3;
+    if (b < 126) return 4;
+    return 5;
+  }
+
+  function getTrackEnergy(track) {
+    if (track && Number.isFinite(Number(track.energy)) && Number(track.energy) >= 1 && Number(track.energy) <= 5) {
+      return Math.round(Number(track.energy));
+    }
+    return estimateEnergyFromBpm(track ? track.bpm : 100);
+  }
+
+  let engineLang = 'it';
+
+  function setLanguage(lang) {
+    engineLang = lang === 'en' ? 'en' : 'it';
+    return engineLang;
+  }
+
+  function getLanguage() {
+    return engineLang;
+  }
+
+  function isEn(lang) {
+    return (lang || engineLang) === 'en';
+  }
+
+  function getKeyLabel(codeOrInfo, lang) {
+    const ki = typeof codeOrInfo === 'string' ? getKeyInfo(codeOrInfo) : codeOrInfo;
+    if (!ki) return typeof codeOrInfo === 'string' ? codeOrInfo : '';
+    return isEn(lang) ? ki.intl : ki.it;
+  }
+
+  /**
+   * Regola 3: Valuta la compatibilità armonica tra due tonalità Camelot
+   */
+  function evaluateHarmonicTransition(fromCode, toCode, mode = 'camelot_classic') {
+    const en = isEn();
+    const a = getKeyInfo(fromCode);
+    const b = getKeyInfo(toCode);
+    if (!a || !b) {
+      return { compatible: false, score: 0, distance: 99, type: 'unknown', label: en ? 'Undefined key' : 'Tonalità non definita' };
+    }
+
+    const delta = camelotStepDelta(a.num, b.num);
+    const absDelta = Math.abs(delta);
+    const sameLetter = a.letter === b.letter;
+    const distance = absDelta + (sameLetter ? 0 : 1);
+
+    if (delta === 0 && sameLetter) {
+      return { compatible: true, score: 100, distance: 0, type: 'same', label: en ? `Same key (${a.code})` : `Stessa tonalità (${a.code})` };
+    }
+    if (delta === 1 && sameLetter) {
+      return { compatible: true, score: 96, distance: 1, type: 'fifth_up', label: en ? `Fifth up +1 (${a.code} → ${b.code})` : `Quinta sup. +1 (${a.code} → ${b.code})` };
+    }
+    if (delta === -1 && sameLetter) {
+      const ok = mode !== 'camelot_ascending';
+      return {
+        compatible: ok,
+        score: ok ? 94 : 50,
+        distance: 1,
+        type: 'fifth_down',
+        label: ok
+          ? (en ? `Fifth down -1 (${a.code} → ${b.code})` : `Quinta inf. -1 (${a.code} → ${b.code})`)
+          : (en ? `Step back -1 (${a.code} → ${b.code})` : `Retrocessione -1 (${a.code} → ${b.code})`)
+      };
+    }
+    if (delta === 0 && !sameLetter) {
+      const ok = mode !== 'same_mode_fifths';
+      return {
+        compatible: ok,
+        score: ok ? 92 : 45,
+        distance: 1,
+        type: 'relative',
+        label: ok
+          ? (en ? `Relative Maj/Min (${a.code} → ${b.code})` : `Relativa Magg/Min (${a.code} → ${b.code})`)
+          : (en ? `Mode switch (${a.code} → ${b.code})` : `Cambio modo (${a.code} → ${b.code})`)
+      };
+    }
+
+    if (mode === 'camelot_extended') {
+      if (delta === 2 && sameLetter) {
+        return { compatible: true, score: 85, distance: 2, type: 'energy_boost', label: `Energy Boost +2 (${a.code} → ${b.code})` };
+      }
+      if (absDelta === 1 && !sameLetter) {
+        return { compatible: true, score: 80, distance: 2, type: 'diagonal', label: en ? `Diagonal mod. (${a.code} → ${b.code})` : `Modulazione diag. (${a.code} → ${b.code})` };
+      }
+    }
+
+    if (mode === 'camelot_ascending' && delta === 2 && sameLetter) {
+      return { compatible: true, score: 86, distance: 2, type: 'energy_boost', label: `Energy Boost +2 (${a.code} → ${b.code})` };
+    }
+
+    return {
+      compatible: false,
+      score: Math.max(5, 60 - distance * 9),
+      distance,
+      type: 'jump',
+      label: en ? `Harmonic bridge Δ${distance} (${a.code} → ${b.code})` : `Ponte armonico Δ${distance} (${a.code} → ${b.code})`
+    };
+  }
+
+  function getCompatibleKeys(fromCode, mode = 'camelot_classic') {
+    const a = getKeyInfo(fromCode);
+    if (!a) return [];
+    return CAMELOT_KEYS.filter((k) => evaluateHarmonicTransition(a.code, k.code, mode).compatible).map((k) => k.code);
+  }
+
+  /**
+   * Regola 2: Valuta la compatibilità dell'alternanza vocale
+   */
+  function evaluateVoiceTransition(lastGenderVoice, prevVoice, candidateVoice) {
+    const en = isEn();
+    const c = candidateVoice || 'M';
+    if (!lastGenderVoice) {
+      return { compatible: true, strictMatch: true, label: en ? `Start (${voiceShortLabel(c)})` : `Inizio (${voiceShortLabel(c)})` };
+    }
+    if (c === 'M' || c === 'F') {
+      if (c !== lastGenderVoice) {
+        return { compatible: true, strictMatch: true, label: `${lastGenderVoice} → ${c}` };
+      }
+      return { compatible: false, strictMatch: false, label: en ? `Same voice (${lastGenderVoice} → ${c})` : `Stessa voce (${lastGenderVoice} → ${c})` };
+    }
+    const doubleBridge = prevVoice === 'D' || prevVoice === 'I';
+    return {
+      compatible: !doubleBridge,
+      strictMatch: false,
+      isBridge: true,
+      label: `${lastGenderVoice} → ${voiceCompactLabel(c)}`
+    };
+  }
+
+  function voiceShortLabel(v, lang) {
+    const en = isEn(lang);
+    if (v === 'M') return en ? 'Male' : 'Maschile';
+    if (v === 'F') return en ? 'Female' : 'Femminile';
+    if (v === 'D') return en ? 'Duet' : 'Duetto';
+    if (v === 'I') return en ? 'Instrumental' : 'Strumentale';
+    return v;
+  }
+
+  function voiceCompactLabel(v, lang) {
+    const en = isEn(lang);
+    if (v === 'M') return 'M';
+    if (v === 'F') return 'F';
+    if (v === 'D') return en ? 'Duet' : 'Duetto';
+    if (v === 'I') return en ? 'Inst.' : 'Strum.';
+    return v;
+  }
+
+  /**
+   * Regola 4: Valuta la transizione BPM / Energia tra brano precedente e candidato.
+   * Modalità energyFlow:
+   * - 'smooth': continuità fluida (|delta| <= maxBpmDelta o compatibilità half/double-time)
+   * - 'ramp_up': crescita graduale (-4 <= delta <= +maxBpmDelta)
+   * - 'ramp_down': discesa graduale (-maxBpmDelta <= delta <= +4)
+   * - 'wave': cresce fino al 65% della playlist, poi scende gradualmente
+   */
+  function evaluateBpmTransition(prevTrack, candidate, options = {}) {
+    const en = isEn();
+    const maxDelta = Number.isFinite(Number(options.maxBpmDelta)) ? Number(options.maxBpmDelta) : 12;
+    const flow = options.energyFlow || 'smooth';
+    const progress = typeof options.progress === 'number' ? options.progress : 0.5;
+    const allowHalfDouble = options.allowHalfDouble !== false;
+
+    const prevBpm = prevTrack && Number(prevTrack.bpm) > 0 ? Number(prevTrack.bpm) : null;
+    const candBpm = candidate && Number(candidate.bpm) > 0 ? Number(candidate.bpm) : null;
+    const prevEnergy = prevTrack ? getTrackEnergy(prevTrack) : null;
+    const candEnergy = getTrackEnergy(candidate);
+
+    if (!prevBpm || !candBpm) {
+      return {
+        compatible: true,
+        score: 85,
+        delta: 0,
+        energyDelta: 0,
+        label: candBpm ? `${candBpm} BPM · E${candEnergy}` : (en ? `Energy E${candEnergy}` : `Energia E${candEnergy}`)
+      };
+    }
+
+    const rawDelta = Math.round(candBpm - prevBpm);
+    const absRaw = Math.abs(rawDelta);
+    const energyDelta = prevEnergy != null ? candEnergy - prevEnergy : 0;
+
+    // Controllo opzionale doppio/mezzo tempo (es. 70 BPM <-> 140 BPM entro tolleranza)
+    const doubleDiff = Math.abs(candBpm - prevBpm * 2);
+    const halfDiff = Math.abs(candBpm * 2 - prevBpm);
+    const isHalfDouble = allowHalfDouble && absRaw > maxDelta && (doubleDiff <= maxDelta || halfDiff <= maxDelta);
+
+    const signStr = rawDelta > 0 ? `+${rawDelta}` : `${rawDelta}`;
+
+    // Determina direzione attesa secondo la curva energetica
+    let effectiveFlow = flow;
+    if (flow === 'wave') {
+      effectiveFlow = progress <= 0.65 ? 'ramp_up' : 'ramp_down';
+    }
+
+    let compatible = false;
+    let score = 50;
+    let label = `${signStr} BPM`;
+
+    if (isHalfDouble) {
+      compatible = true;
+      score = 86;
+      label = `½/2x Tempo (${prevBpm}→${candBpm})`;
+    } else if (effectiveFlow === 'smooth') {
+      compatible = absRaw <= maxDelta;
+      score = compatible ? Math.round(100 - (absRaw / Math.max(1, maxDelta)) * 22) : Math.max(5, 55 - (absRaw - maxDelta) * 2.5);
+      label = compatible
+        ? (en ? `Smooth BPM (${signStr})` : `BPM fluido (${signStr})`)
+        : (en ? `BPM jump (${signStr})` : `Salto BPM (${signStr})`);
+    } else if (effectiveFlow === 'ramp_up') {
+      // Permette micro-oscillazione fino a -4 BPM ma premia la salita entro +maxDelta
+      const minAllowed = -Math.min(4, Math.floor(maxDelta / 3));
+      compatible = rawDelta >= minAllowed && rawDelta <= maxDelta && energyDelta >= -1;
+      if (compatible) {
+        const idealBonus = rawDelta >= 0 ? 10 : 0;
+        score = Math.min(100, Math.round(88 + idealBonus - Math.abs(rawDelta - maxDelta * 0.45) * 1.2));
+        label = rawDelta >= 0
+          ? (en ? `Ramp up (${signStr} BPM)` : `Crescendo (${signStr} BPM)`)
+          : (en ? `Steady (${signStr} BPM)` : `Stabile (${signStr} BPM)`);
+      } else {
+        score = Math.max(5, 50 - Math.abs(rawDelta) * 1.8);
+        label = rawDelta < minAllowed
+          ? (en ? `BPM drop (${signStr})` : `Calo BPM (${signStr})`)
+          : (en ? `BPM spike (${signStr})` : `Picco BPM (${signStr})`);
+      }
+    } else if (effectiveFlow === 'ramp_down') {
+      const maxAllowed = Math.min(4, Math.floor(maxDelta / 3));
+      compatible = rawDelta <= maxAllowed && rawDelta >= -maxDelta && energyDelta <= 1;
+      if (compatible) {
+        const idealBonus = rawDelta <= 0 ? 10 : 0;
+        score = Math.min(100, Math.round(88 + idealBonus - Math.abs(rawDelta + maxDelta * 0.45) * 1.2));
+        label = rawDelta <= 0
+          ? (en ? `Cool down (${signStr} BPM)` : `Decrescendo (${signStr} BPM)`)
+          : (en ? `Steady (${signStr} BPM)` : `Stabile (${signStr} BPM)`);
+      } else {
+        score = Math.max(5, 50 - Math.abs(rawDelta) * 1.8);
+        label = rawDelta > maxAllowed
+          ? (en ? `BPM rise (${signStr})` : `Salita BPM (${signStr})`)
+          : (en ? `BPM plunge (${signStr})` : `Crollo BPM (${signStr})`);
+      }
+    }
+
+    return { compatible, score, delta: rawDelta, energyDelta, isHalfDouble, label };
+  }
+
+  /**
+   * Regola 5: Valuta la distanza minima tra brani dello stesso artista.
+   * recentArtists: array di nomi artista normalizzati in ordine cronologico (ultimo elemento = brano appena suonato).
+   * minGap: numero minimo di brani di ALTRI artisti che devono separare due brani dello stesso artista.
+   * Es: minGap = 2 significa che negli ultimi 2 brani non deve comparire lo stesso artista.
+   */
+  function evaluateArtistSeparation(recentArtists, candidateArtist, minGap = 2) {
+    const en = isEn();
+    const gap = Math.max(0, Math.floor(Number(minGap) || 0));
+    const normCand = normalizeArtistName(candidateArtist);
+    if (gap === 0 || !normCand || !recentArtists || recentArtists.length === 0) {
+      return { compatible: true, tracksSince: Infinity, label: en ? 'Artist ok' : 'Artista ok' };
+    }
+
+    // Cerca l'ultima occorrenza dell'artista in recentArtists
+    const len = recentArtists.length;
+    for (let dist = 0; dist < Math.min(gap, len); dist++) {
+      const recent = recentArtists[len - 1 - dist];
+      if (recent && recent === normCand) {
+        return {
+          compatible: false,
+          tracksSince: dist,
+          label: dist === 0
+            ? (en ? 'Same artist back-to-back' : 'Stesso artista consecutivo')
+            : (en ? `Repeated artist (-${dist + 1})` : `Artista ripetuto (-${dist + 1})`)
+        };
+      }
+    }
+
+    return { compatible: true, tracksSince: Infinity, label: en ? `Artist separated (≥${gap})` : `Artista separato (≥${gap})` };
+  }
+
+  /**
+   * Calcola la valutazione completa di un passo rispetto a tutte e 5 le regole.
+   */
+  function evaluateStep(prevTrack, lastGenderVoice, candidate, rules, context = {}) {
+    const en = isEn();
+    const ruleNoRepeat = rules.noRepeat !== false;
+    const ruleVoice = rules.alternateVoice !== false;
+    const ruleHarmony = rules.harmonicLogic !== false;
+    const ruleBpm = Boolean(rules.bpmLogic);
+    const ruleArtist = Boolean(rules.artistSeparation);
+
+    const harmonyMode = rules.harmonyMode || 'camelot_classic';
+    const minArtistGap = rules.minArtistGap != null ? Number(rules.minArtistGap) : 2;
+    const recentArtists = context.recentArtists || (prevTrack ? [normalizeArtistName(prevTrack.artist)] : []);
+
+    const voiceEval = prevTrack
+      ? evaluateVoiceTransition(lastGenderVoice, prevTrack.voice, candidate.voice)
+      : { compatible: true, strictMatch: true, label: en ? `Start (${voiceShortLabel(candidate.voice)})` : `Avvio (${voiceShortLabel(candidate.voice)})` };
+
+    const harmonicEval = prevTrack
+      ? evaluateHarmonicTransition(prevTrack.key, candidate.key, harmonyMode)
+      : { compatible: true, score: 100, distance: 0, type: 'start', label: en ? `Starting key (${candidate.key})` : `Tonalità iniziale (${candidate.key})` };
+
+    const bpmEval = prevTrack
+      ? evaluateBpmTransition(prevTrack, candidate, {
+          maxBpmDelta: rules.maxBpmDelta != null ? Number(rules.maxBpmDelta) : 12,
+          energyFlow: rules.energyFlow || 'smooth',
+          progress: context.progress != null ? context.progress : 0.5,
+          allowHalfDouble: rules.allowHalfDouble !== false
+        })
+      : { compatible: true, score: 100, delta: 0, energyDelta: 0, label: `${candidate.bpm || 100} BPM · E${getTrackEnergy(candidate)}` };
+
+    const artistEval = prevTrack
+      ? evaluateArtistSeparation(recentArtists, candidate.artist, minArtistGap)
+      : { compatible: true, tracksSince: Infinity, label: en ? 'Starting artist' : 'Artista iniziale' };
+
+    const voiceOk = !ruleVoice || voiceEval.compatible;
+    const harmonyOk = !ruleHarmony || harmonicEval.compatible;
+    const bpmOk = !ruleBpm || bpmEval.compatible;
+    const artistOk = !ruleArtist || artistEval.compatible;
+
+    const activeCount = (ruleVoice ? 1 : 0) + (ruleHarmony ? 1 : 0) + (ruleBpm ? 1 : 0) + (ruleArtist ? 1 : 0);
+    const metCount = (ruleVoice && voiceOk ? 1 : 0) + (ruleHarmony && harmonyOk ? 1 : 0) + (ruleBpm && bpmOk ? 1 : 0) + (ruleArtist && artistOk ? 1 : 0);
+
+    return {
+      allRulesMet: voiceOk && harmonyOk && bpmOk && artistOk,
+      voiceOk,
+      harmonyOk,
+      bpmOk,
+      artistOk,
+      noRepeatOk: ruleNoRepeat,
+      activeRulesCount: activeCount,
+      metRulesCount: metCount,
+      voiceEval,
+      harmonicEval,
+      bpmEval,
+      artistEval,
+      priorityScore:
+        (artistOk ? 1200 : 0) +
+        (voiceOk ? 1100 : 0) +
+        (harmonyOk ? 1000 : 0) +
+        (bpmOk ? 900 : 0) +
+        (voiceEval.strictMatch ? 80 : 0) +
+        harmonicEval.score +
+        (ruleBpm ? bpmEval.score * 0.8 : 0)
+    };
+  }
+
+  /**
+   * Costruisce un singolo percorso completo usando euristica di Warnsdorff multi-vincolo.
+   */
+  function buildSinglePlan(tracks, options, rng) {
+    const rules = options.rules || {};
+    const playedIds = new Set(options.playedIds || []);
+    const strictStop = Boolean(options.strictStop);
+    const minArtistGap = rules.minArtistGap != null ? Number(rules.minArtistGap) : 2;
+
+    const pool = tracks.filter((t) => !(rules.noRepeat !== false && playedIds.has(t.id)));
+    if (pool.length === 0) {
+      return {
+        queue: [],
+        stats: {
+          total: 0, transitionsCount: 0, perfectTransitions: 0,
+          voiceViolations: 0, harmonyViolations: 0, bpmViolations: 0, artistViolations: 0,
+          complianceRate: 100, stoppedEarly: false
+        }
+      };
+    }
+
+    const remaining = new Map();
+    pool.forEach((t) => remaining.set(t.id, t));
+
+    const queue = [];
+    let currentTrack = options.currentTrack || null;
+    let lastGenderVoice = options.lastGenderVoice || (currentTrack && (currentTrack.voice === 'M' || currentTrack.voice === 'F') ? currentTrack.voice : null);
+
+    // Cronologia artisti recenti (normalizzati)
+    const recentArtists = Array.isArray(options.recentArtists)
+      ? options.recentArtists.map(normalizeArtistName).filter(Boolean)
+      : (currentTrack ? [normalizeArtistName(currentTrack.artist)] : []);
+
+    const totalExpected = pool.length + (currentTrack ? 1 : 0);
+
+    // Selezione brano iniziale se non c'è currentTrack
+    if (!currentTrack && options.startTrackId && remaining.has(options.startTrackId)) {
+      const first = remaining.get(options.startTrackId);
+      remaining.delete(first.id);
+      const stepInfo = evaluateStep(null, null, first, rules, { recentArtists, progress: 0 });
+      queue.push({ track: first, transition: stepInfo });
+      currentTrack = first;
+      if (first.voice === 'M' || first.voice === 'F') lastGenderVoice = first.voice;
+      recentArtists.push(normalizeArtistName(first.artist));
+    } else if (!currentTrack) {
+      const mCount = pool.filter((t) => t.voice === 'M').length;
+      const fCount = pool.filter((t) => t.voice === 'F').length;
+      let startCandidates = pool;
+      if (rules.alternateVoice !== false && mCount !== fCount && (mCount > 0 || fCount > 0)) {
+        const dominant = mCount > fCount ? 'M' : 'F';
+        const filtered = pool.filter((t) => t.voice === dominant);
+        if (filtered.length > 0) startCandidates = filtered;
+      }
+
+      // Se curva BPM è crescendo/wave -> parti preferibilmente da BPM più bassi; se decrescendo -> BPM più alti
+      if (rules.bpmLogic && (rules.energyFlow === 'ramp_up' || rules.energyFlow === 'wave')) {
+        const sortedByBpm = [...startCandidates].sort((a, b) => (a.bpm || 100) - (b.bpm || 100));
+        startCandidates = sortedByBpm.slice(0, Math.max(2, Math.ceil(sortedByBpm.length * 0.35)));
+      } else if (rules.bpmLogic && rules.energyFlow === 'ramp_down') {
+        const sortedByBpm = [...startCandidates].sort((a, b) => (b.bpm || 100) - (a.bpm || 100));
+        startCandidates = sortedByBpm.slice(0, Math.max(2, Math.ceil(sortedByBpm.length * 0.35)));
+      }
+
+      if (options.preferLowDegreeStart && startCandidates.length > 1) {
+        const withDeg = startCandidates.map((cand) => {
+          const nextGender = (cand.voice === 'M' || cand.voice === 'F') ? cand.voice : null;
+          const nextArtists = [...recentArtists, normalizeArtistName(cand.artist)];
+          let deg = 0;
+          for (const other of pool) {
+            if (other.id === cand.id) continue;
+            if (evaluateStep(cand, nextGender, other, rules, { recentArtists: nextArtists, progress: 1 / Math.max(1, totalExpected) }).allRulesMet) deg++;
+          }
+          return { cand, deg, tie: rng() };
+        });
+        withDeg.sort((a, b) => (a.deg - b.deg) || (a.tie - b.tie));
+        const topK = Math.max(1, Math.min(3, withDeg.length));
+        startCandidates = [withDeg[Math.floor(rng() * topK)].cand];
+      }
+
+      const first = startCandidates[Math.floor(rng() * startCandidates.length)];
+      remaining.delete(first.id);
+      const stepInfo = evaluateStep(null, null, first, rules, { recentArtists, progress: 0 });
+      queue.push({ track: first, transition: stepInfo });
+      currentTrack = first;
+      if (first.voice === 'M' || first.voice === 'F') lastGenderVoice = first.voice;
+      recentArtists.push(normalizeArtistName(first.artist));
+    }
+
+    let perfectTransitions = 0;
+    let voiceViolations = 0;
+    let harmonyViolations = 0;
+    let bpmViolations = 0;
+    let artistViolations = 0;
+    let stoppedEarly = false;
+
+    while (remaining.size > 0) {
+      const stepProgress = queue.length / Math.max(1, totalExpected - 1);
+      const candidates = Array.from(remaining.values()).map((cand) => ({
+        track: cand,
+        evalRes: evaluateStep(currentTrack, lastGenderVoice, cand, rules, { recentArtists, progress: stepProgress })
+      }));
+
+      // Tier 1: tutte le regole attive rispettate
+      let bestTier = candidates.filter((c) => c.evalRes.allRulesMet);
+
+      if (bestTier.length === 0) {
+        if (strictStop) {
+          stoppedEarly = true;
+          break;
+        }
+        // Fallback intelligente: seleziona il sottoinsieme con il massimo numero di regole soddisfatte
+        const maxMet = Math.max(...candidates.map((c) => c.evalRes.metRulesCount));
+        bestTier = candidates.filter((c) => c.evalRes.metRulesCount === maxMet);
+      }
+
+      // Euristica di Warnsdorff sul pool residuo
+      const scored = bestTier.map((item) => {
+        const nextLastGender = (item.track.voice === 'M' || item.track.voice === 'F') ? item.track.voice : lastGenderVoice;
+        const nextRecent = [...recentArtists.slice(-Math.max(1, minArtistGap)), normalizeArtistName(item.track.artist)];
+        const nextProgress = (queue.length + 1) / Math.max(1, totalExpected - 1);
+
+        let onwardValid = 0;
+        for (const other of remaining.values()) {
+          if (other.id === item.track.id) continue;
+          if (evaluateStep(item.track, nextLastGender, other, rules, { recentArtists: nextRecent, progress: nextProgress }).allRulesMet) {
+            onwardValid++;
+          }
+        }
+
+        const deadEndPenalty = (remaining.size > 1 && onwardValid === 0) ? -520 : 0;
+        const warnsdorffBonus = onwardValid > 0 ? (40 - Math.min(onwardValid, 40)) * 4 : 0;
+        const strictVoiceBonus = item.evalRes.voiceEval.strictMatch ? 35 : 0;
+        const varietyBonus = item.evalRes.harmonicEval.type === 'same' ? -4 : 6;
+
+        // Bonus extra per artisti con molti brani ancora da piazzare (evita di accumulare lo stesso artista alla fine!)
+        const candNormArtist = normalizeArtistName(item.track.artist);
+        let sameArtistLeft = 0;
+        if (rules.artistSeparation && candNormArtist) {
+          for (const other of remaining.values()) {
+            if (normalizeArtistName(other.artist) === candNormArtist) sameArtistLeft++;
+          }
+        }
+        const artistUrgencyBonus = sameArtistLeft > 1 ? (sameArtistLeft - 1) * 45 : 0;
+
+        const composite =
+          item.evalRes.priorityScore +
+          deadEndPenalty +
+          warnsdorffBonus +
+          strictVoiceBonus +
+          varietyBonus +
+          artistUrgencyBonus +
+          rng() * 14;
+
+        return { ...item, onwardValid, composite };
+      });
+
+      scored.sort((a, b) => b.composite - a.composite);
+      const chosen = scored[0];
+
+      remaining.delete(chosen.track.id);
+      queue.push({ track: chosen.track, transition: chosen.evalRes });
+
+      if (chosen.evalRes.allRulesMet) perfectTransitions++;
+      if (!chosen.evalRes.voiceOk) voiceViolations++;
+      if (!chosen.evalRes.harmonyOk) harmonyViolations++;
+      if (!chosen.evalRes.bpmOk) bpmViolations++;
+      if (!chosen.evalRes.artistOk) artistViolations++;
+
+      currentTrack = chosen.track;
+      if (chosen.track.voice === 'M' || chosen.track.voice === 'F') {
+        lastGenderVoice = chosen.track.voice;
+      }
+      recentArtists.push(normalizeArtistName(chosen.track.artist));
+    }
+
+    const transitionsCount = Math.max(0, queue.length - (options.currentTrack ? 0 : 1));
+    const complianceRate = transitionsCount > 0 ? Math.round((perfectTransitions / transitionsCount) * 100) : 100;
+
+    return {
+      queue,
+      stats: {
+        total: queue.length,
+        transitionsCount,
+        perfectTransitions,
+        voiceViolations,
+        harmonyViolations,
+        bpmViolations,
+        artistViolations,
+        complianceRate,
+        stoppedEarly
+      }
+    };
+  }
+
+  /**
+   * Pianificatore multi-start: esegue N simulazioni con Warnsdorff e sceglie la sequenza ottimale.
+   */
+  function generateSmartPlaylist(tracks, options = {}) {
+    const attempts = Math.min(Math.max(options.attempts || 32, 1), 80);
+    const seedBase = typeof options.seed === 'number' ? options.seed : Math.floor(Math.random() * 1e9);
+
+    function createRng(seed) {
+      let s = seed >>> 0;
+      return function () {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 4294967296;
+      };
+    }
+
+    let bestPlan = null;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < attempts; i++) {
+      const rng = createRng(seedBase + i * 7919);
+      const runOptions = { ...options, preferLowDegreeStart: i % 2 === 1 };
+      const plan = buildSinglePlan(tracks, runOptions, rng);
+      const s = plan.stats;
+      const planScore =
+        s.perfectTransitions * 1000 +
+        s.total * 120 -
+        s.artistViolations * 700 -
+        s.voiceViolations * 600 -
+        s.harmonyViolations * 450 -
+        s.bpmViolations * 400;
+
+      if (planScore > bestScore) {
+        bestScore = planScore;
+        bestPlan = plan;
+      }
+      if (!s.stoppedEarly && s.voiceViolations === 0 && s.harmonyViolations === 0 && s.bpmViolations === 0 && s.artistViolations === 0 && i >= 3) {
+        break;
+      }
+    }
+
+    return bestPlan || {
+      queue: [],
+      stats: {
+        total: 0, transitionsCount: 0, perfectTransitions: 0,
+        voiceViolations: 0, harmonyViolations: 0, bpmViolations: 0, artistViolations: 0,
+        complianceRate: 100, stoppedEarly: false
+      }
+    };
+  }
+
+  /**
+   * Parsing intelligente dei metadati dal nome file:
+   * Es: "Artista - Titolo [F] [8A] [112bpm] [E4].mp3"
+   */
+  function parseMetadataFromFilename(filename) {
+    const base = String(filename || '').replace(/\.[^/.]+$/, '').trim();
+    let working = base;
+
+    let detectedVoice = null;
+    let detectedKey = null;
+    let detectedBpm = null;
+    let detectedEnergy = null;
+
+    const bracketMatches = [...working.matchAll(/[\[\(]([^\]\)]+)[\]\)]/g)];
+    for (const m of bracketMatches) {
+      const token = m[1].trim();
+      const lower = token.toLowerCase();
+
+      if (!detectedVoice) {
+        if (['m', 'male', 'maschile', 'uomo'].includes(lower)) { detectedVoice = 'M'; working = working.replace(m[0], ' '); continue; }
+        if (['f', 'female', 'femminile', 'donna'].includes(lower)) { detectedVoice = 'F'; working = working.replace(m[0], ' '); continue; }
+        if (['d', 'duet', 'duetto', 'misto'].includes(lower)) { detectedVoice = 'D'; working = working.replace(m[0], ' '); continue; }
+        if (['i', 'inst', 'instrumental', 'strumentale'].includes(lower)) { detectedVoice = 'I'; working = working.replace(m[0], ' '); continue; }
+      }
+
+      if (!detectedBpm) {
+        const bpmMatch = lower.match(/^(\d{2,3})\s*bpm$/);
+        if (bpmMatch) {
+          const val = parseInt(bpmMatch[1], 10);
+          if (val >= 50 && val <= 220) {
+            detectedBpm = val;
+            working = working.replace(m[0], ' ');
+            continue;
+          }
+        }
+      }
+
+      if (!detectedEnergy) {
+        const eMatch = lower.match(/^e([1-5])$/);
+        if (eMatch) {
+          detectedEnergy = parseInt(eMatch[1], 10);
+          working = working.replace(m[0], ' ');
+          continue;
+        }
+      }
+
+      if (!detectedKey) {
+        const k = normalizeKey(token);
+        if (k) {
+          detectedKey = k;
+          working = working.replace(m[0], ' ');
+          continue;
+        }
+      }
+    }
+
+    working = working.replace(/^\d{1,3}\s*[-._)]\s*/, '').replace(/\s+/g, ' ').trim();
+
+    let artist = isEn() ? 'Unknown Artist' : 'Artista sconosciuto';
+    let title = working || base;
+    const dashParts = working.split(/\s+[-–—]\s+/);
+    if (dashParts.length >= 2) {
+      artist = dashParts[0].trim();
+      title = dashParts.slice(1).join(' - ').trim();
+    }
+
+    return {
+      artist,
+      title,
+      voice: detectedVoice,
+      key: detectedKey,
+      bpm: detectedBpm,
+      energy: detectedEnergy
+    };
+  }
+
+  function detectImageMime(bytes) {
+    if (!bytes || bytes.length < 4) return null;
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return 'image/gif';
+    if (bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp';
+    return null;
+  }
+
+  /**
+   * Parser ID3v2 (TIT2, TPE1, TKEY, TBPM, APIC copertina)
+   */
+  function parseID3v2(arrayBuffer) {
+    const result = { title: null, artist: null, key: null, bpm: null, cover: null, tagTotalBytes: 0 };
+    if (!arrayBuffer || arrayBuffer.byteLength < 10) return result;
+
+    const view = new DataView(arrayBuffer);
+    if (view.getUint8(0) !== 0x49 || view.getUint8(1) !== 0x44 || view.getUint8(2) !== 0x33) return result;
+    const majorVer = view.getUint8(3);
+    if (majorVer < 2 || majorVer > 4) return result;
+
+    const tagSize =
+      ((view.getUint8(6) & 0x7f) << 21) |
+      ((view.getUint8(7) & 0x7f) << 14) |
+      ((view.getUint8(8) & 0x7f) << 7) |
+      (view.getUint8(9) & 0x7f);
+    result.tagTotalBytes = 10 + tagSize;
+
+    const end = Math.min(10 + tagSize, arrayBuffer.byteLength);
+    let offset = 10;
+    const flags = view.getUint8(5);
+    if (majorVer >= 3 && (flags & 0x40) !== 0 && offset + 4 <= end) {
+      offset += 4 + view.getUint32(offset);
+    }
+
+    function decodeTextFrame(bytes) {
+      if (!bytes || bytes.length < 2) return '';
+      const encoding = bytes[0];
+      const payload = bytes.subarray(1);
+      try {
+        const codec = encoding === 0 ? 'iso-8859-1' : encoding === 1 ? 'utf-16' : encoding === 2 ? 'utf-16be' : 'utf-8';
+        return new TextDecoder(codec).decode(payload).replace(/\0+$/, '').trim();
+      } catch (_) {
+        let s = '';
+        for (let i = 0; i < payload.length; i++) {
+          if (payload[i] >= 32 && payload[i] < 127) s += String.fromCharCode(payload[i]);
+        }
+        return s.trim();
+      }
+    }
+
+    function parseApicFrame(bytes) {
+      if (!bytes || bytes.length < 16) return null;
+      const encoding = bytes[0];
+      let p = 1;
+      let mime = '';
+      while (p < bytes.length && bytes[p] !== 0) {
+        mime += String.fromCharCode(bytes[p]);
+        p++;
+      }
+      p++; // skip null terminator after MIME
+      if (p >= bytes.length) return null;
+      p++; // skip picture type byte
+      // Skip description (terminated by 0x00 for enc 0/3, or 0x00 0x00 for enc 1/2)
+      if (encoding === 1 || encoding === 2) {
+        while (p + 1 < bytes.length && !(bytes[p] === 0 && bytes[p + 1] === 0)) p += 2;
+        p += 2;
+      } else {
+        while (p < bytes.length && bytes[p] !== 0) p++;
+        p++;
+      }
+      if (p >= bytes.length) return null;
+      const imgBytes = bytes.slice(p);
+      const detected = detectImageMime(imgBytes);
+      const finalMime = detected || (mime && mime.includes('/') ? mime : 'image/jpeg');
+      return imgBytes.length > 32 ? { mime: finalMime, bytes: imgBytes } : null;
+    }
+
+    if (majorVer === 2) {
+      // ID3v2.2 (6-byte frame headers: 3-char ID + 3-byte size; PIC for cover)
+      while (offset + 6 <= end) {
+        if (view.getUint8(offset) === 0) break;
+        const fid = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2));
+        const fsz = (view.getUint8(offset + 3) << 16) | (view.getUint8(offset + 4) << 8) | view.getUint8(offset + 5);
+        if (fsz <= 0 || offset + 6 + fsz > end) break;
+        const data = new Uint8Array(arrayBuffer, offset + 6, fsz);
+        if (fid === 'TT2') result.title = decodeTextFrame(data) || result.title;
+        else if (fid === 'TP1') result.artist = decodeTextFrame(data) || result.artist;
+        else if (fid === 'TKE') result.key = normalizeKey(decodeTextFrame(data)) || result.key;
+        else if (fid === 'PIC' && !result.cover && fsz > 10) {
+          let p = 5; // enc(1) + fmt(3) + picType(1)
+          const enc = data[0];
+          if (enc === 1 || enc === 2) { while (p + 1 < data.length && !(data[p] === 0 && data[p + 1] === 0)) p += 2; p += 2; }
+          else { while (p < data.length && data[p] !== 0) p++; p++; }
+          const imgBytes = data.slice(p);
+          const m = detectImageMime(imgBytes);
+          if (m && imgBytes.length > 32) result.cover = { mime: m, bytes: imgBytes };
+        }
+        offset += 6 + fsz;
+      }
+      return result;
+    }
+
+    while (offset + 10 <= end) {
+      if (view.getUint8(offset) === 0) break;
+      const frameId = String.fromCharCode(
+        view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3)
+      );
+      const frameSize = majorVer === 4
+        ? ((view.getUint8(offset + 4) & 0x7f) << 21) | ((view.getUint8(offset + 5) & 0x7f) << 14) | ((view.getUint8(offset + 6) & 0x7f) << 7) | (view.getUint8(offset + 7) & 0x7f)
+        : view.getUint32(offset + 4);
+      if (frameSize <= 0 || offset + 10 + frameSize > end) break;
+
+      if (frameId === 'TIT2' || frameId === 'TPE1' || frameId === 'TKEY' || frameId === 'TBPM') {
+        const text = decodeTextFrame(new Uint8Array(arrayBuffer, offset + 10, frameSize));
+        if (text) {
+          if (frameId === 'TIT2') result.title = text;
+          else if (frameId === 'TPE1') result.artist = text;
+          else if (frameId === 'TKEY') result.key = normalizeKey(text) || null;
+          else if (frameId === 'TBPM') {
+            const num = Math.round(parseFloat(text));
+            if (!Number.isNaN(num) && num >= 50 && num <= 220) result.bpm = num;
+          }
+        }
+      } else if (frameId === 'APIC' && !result.cover) {
+        result.cover = parseApicFrame(new Uint8Array(arrayBuffer, offset + 10, frameSize));
+      }
+      offset += 10 + frameSize;
+    }
+    return result;
+  }
+
+  /**
+   * Estrae la copertina da un file FLAC (blocco metadati tipo 6: METADATA_BLOCK_PICTURE)
+   */
+  function parseFLACCover(arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 12) return null;
+    const view = new DataView(arrayBuffer);
+    if (view.getUint8(0) !== 0x66 || view.getUint8(1) !== 0x4c || view.getUint8(2) !== 0x61 || view.getUint8(3) !== 0x43) {
+      return null; // Not "fLaC"
+    }
+    let offset = 4;
+    while (offset + 4 <= arrayBuffer.byteLength) {
+      const header = view.getUint8(offset);
+      const isLast = (header & 0x80) !== 0;
+      const blockType = header & 0x7f;
+      const blockLen = (view.getUint8(offset + 1) << 16) | (view.getUint8(offset + 2) << 8) | view.getUint8(offset + 3);
+      offset += 4;
+      if (offset + blockLen > arrayBuffer.byteLength) break;
+
+      if (blockType === 6 && blockLen > 32) {
+        let p = offset + 4; // skip pictureType
+        const mimeLen = view.getUint32(p); p += 4;
+        if (p + mimeLen + 4 <= offset + blockLen) {
+          const mimeBytes = new Uint8Array(arrayBuffer, p, mimeLen);
+          const mime = String.fromCharCode(...mimeBytes);
+          p += mimeLen;
+          const descLen = view.getUint32(p); p += 4 + descLen;
+          p += 16; // width, height, depth, colors
+          if (p + 4 <= offset + blockLen) {
+            const dataLen = view.getUint32(p); p += 4;
+            if (dataLen > 32 && p + dataLen <= offset + blockLen) {
+              const imgBytes = new Uint8Array(arrayBuffer.slice(p, p + dataLen));
+              return { mime: detectImageMime(imgBytes) || mime || 'image/jpeg', bytes: imgBytes };
+            }
+          }
+        }
+      }
+      offset += blockLen;
+      if (isLast) break;
+    }
+    return null;
+  }
+
+  /**
+   * Estrae la copertina da un file MP4 / M4A / AAC cercando l'atom 'covr' -> 'data'
+   */
+  function parseMP4Cover(arrayBuffer) {
+    if (!arrayBuffer || arrayBuffer.byteLength < 32) return null;
+    const bytes = new Uint8Array(arrayBuffer);
+    const view = new DataView(arrayBuffer);
+    // Verifica presenza 'ftyp' nei primi 12 byte
+    if (!(bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70)) return null;
+
+    // Cerca la sequenza 'covr' nel buffer metadati
+    for (let i = 8; i < bytes.length - 24; i++) {
+      if (bytes[i] === 0x63 && bytes[i + 1] === 0x6f && bytes[i + 2] === 0x76 && bytes[i + 3] === 0x72) {
+        // Cerca atom 'data' subito dopo 'covr'
+        const searchEnd = Math.min(bytes.length - 16, i + 64);
+        for (let j = i + 4; j < searchEnd; j++) {
+          if (bytes[j] === 0x64 && bytes[j + 1] === 0x61 && bytes[j + 2] === 0x74 && bytes[j + 3] === 0x61) {
+            const dataAtomSize = view.getUint32(j - 4);
+            const imgStart = j + 12; // 4 ('data') + 4 (type) + 4 (locale)
+            const imgLen = dataAtomSize - 16;
+            if (imgLen > 32 && imgStart + imgLen <= bytes.length) {
+              const imgBytes = bytes.slice(imgStart, imgStart + imgLen);
+              const mime = detectImageMime(imgBytes);
+              if (mime) return { mime, bytes: imgBytes };
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Estrae copertina da qualsiasi formato supportato (MP3 ID3v2, FLAC, M4A/MP4)
+   */
+  function extractCoverArt(arrayBuffer) {
+    const id3 = parseID3v2(arrayBuffer);
+    if (id3.cover) return id3.cover;
+    const flac = parseFLACCover(arrayBuffer);
+    if (flac) return flac;
+    const mp4 = parseMP4Cover(arrayBuffer);
+    if (mp4) return mp4;
+    return null;
+  }
+
+  /**
+   * Copertina standard ArmoniaPlay — Lucio Ardito usata quando nei tag del file audio non è presente una copertina.
+   */
+  const STANDARD_COVER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1b2232"/>
+        <stop offset="100%" stop-color="#0d1017"/>
+      </linearGradient>
+      <radialGradient id="vinyl" cx="50%" cy="46%" r="44%">
+        <stop offset="0%" stop-color="#252c3d"/>
+        <stop offset="55%" stop-color="#141822"/>
+        <stop offset="100%" stop-color="#0a0d13"/>
+      </radialGradient>
+      <linearGradient id="label" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#2563eb"/>
+        <stop offset="100%" stop-color="#1e3a8a"/>
+      </linearGradient>
+      <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.14"/>
+        <stop offset="45%" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.06"/>
+      </linearGradient>
+    </defs>
+    <rect width="400" height="400" fill="url(#bg)"/>
+    <circle cx="200" cy="182" r="134" fill="url(#vinyl)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+    <circle cx="200" cy="182" r="118" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="200" cy="182" r="102" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="200" cy="182" r="86" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    <circle cx="200" cy="182" r="134" fill="url(#sheen)"/>
+    <circle cx="200" cy="182" r="54" fill="url(#label)" stroke="rgba(255,255,255,0.28)" stroke-width="1.5"/>
+    <circle cx="200" cy="182" r="34" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+    <path d="M200 148v16M200 200v16M166 182h16M218 182h16" stroke="rgba(255,255,255,0.75)" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="200" cy="182" r="12" fill="#0d1017" stroke="#ffffff" stroke-width="2.5"/>
+    <text x="200" y="346" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="16" font-weight="600" letter-spacing="3.5" fill="#f1f5f9">ARMONIAPLAY</text>
+    <text x="200" y="368" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" font-weight="400" letter-spacing="1.2" fill="#94a3b8">Lucio Ardito</text>
+  </svg>`;
+  const STANDARD_COVER_DATA_URL = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(STANDARD_COVER_SVG);
+
+  function getStandardCoverDataUrl() {
+    return STANDARD_COVER_DATA_URL;
+  }
+
+  function generateFallbackCoverDataUrl() {
+    return STANDARD_COVER_DATA_URL;
+  }
+
+  const KS_MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+  const KS_MINOR_PROFILE = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+
+  function pearsonCorrelation(x, y) {
+    const n = x.length;
+    let mx = 0, my = 0;
+    for (let i = 0; i < n; i++) { mx += x[i]; my += y[i]; }
+    mx /= n; my /= n;
+    let num = 0, dx = 0, dy = 0;
+    for (let i = 0; i < n; i++) {
+      const vx = x[i] - mx, vy = y[i] - my;
+      num += vx * vy; dx += vx * vx; dy += vy * vy;
+    }
+    const denom = Math.sqrt(dx * dy);
+    return denom > 0 ? num / denom : 0;
+  }
+
+  /**
+   * Stima BPM via onset-strength autocorrelation (65..175 BPM) e energia RMS (1..5)
+   */
+  function estimateBpmAndEnergy(mono, effRate) {
+    const hop = 256;
+    const winLen = 512;
+    const numFrames = Math.floor((mono.length - winLen) / hop);
+    if (numFrames < 40) return { bpm: 104, energy: 3 };
+
+    const rmsArr = new Float32Array(numFrames);
+    let totalRms = 0;
+    for (let f = 0; f < numFrames; f++) {
+      const base = f * hop;
+      let sum = 0;
+      for (let i = 0; i < winLen; i++) {
+        const v = mono[base + i];
+        sum += v * v;
+      }
+      const r = Math.sqrt(sum / winLen);
+      rmsArr[f] = r;
+      totalRms += r;
+    }
+    const avgRms = totalRms / numFrames;
+
+    // Onset flux (differenza positiva di energia)
+    const flux = new Float32Array(numFrames);
+    for (let f = 1; f < numFrames; f++) {
+      const diff = rmsArr[f] - rmsArr[f - 1];
+      flux[f] = diff > 0 ? diff : 0;
+    }
+
+    const frameRate = effRate / hop; // ~43 Hz
+    const minLag = Math.max(1, Math.floor((frameRate * 60) / 175));
+    const maxLag = Math.min(numFrames - 10, Math.ceil((frameRate * 60) / 65));
+
+    let bestLag = Math.round((frameRate * 60) / 110);
+    let bestCorr = -1;
+
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let acc = 0;
+      const limit = numFrames - lag;
+      for (let i = 0; i < limit; i++) {
+        acc += flux[i] * flux[i + lag];
+      }
+      const norm = acc / limit;
+      // Leggera preferenza percettiva per l'ottava ritmica 85-150 BPM
+      const bpmCand = (frameRate * 60) / lag;
+      const weight = (bpmCand >= 85 && bpmCand <= 150) ? 1.12 : 1.0;
+      if (norm * weight > bestCorr) {
+        bestCorr = norm * weight;
+        bestLag = lag;
+      }
+    }
+
+    let bpm = Math.round((frameRate * 60) / bestLag);
+    while (bpm < 68) bpm *= 2;
+    while (bpm > 175) bpm = Math.round(bpm / 2);
+
+    // Calcola livello energia 1..5 combinando RMS percepito e BPM
+    const rmsScore = Math.min(1, avgRms / 0.22);
+    const bpmScore = Math.max(0, Math.min(1, (bpm - 72) / 68));
+    const combined = rmsScore * 0.55 + bpmScore * 0.45;
+    const energy = Math.max(1, Math.min(5, Math.round(1 + combined * 4)));
+
+    return { bpm, energy };
+  }
+
+  /**
+   * Analisi completa audio PCM mono: tonalità Camelot (Goertzel + KS), stima voce M/F, BPM ed Energia (1..5)
+   */
+  function analyzeAudioSamples(samples, sampleRate) {
+    if (!samples || samples.length < 2048 || !sampleRate) {
+      return { key: '8A', confidence: 0, estimatedVoice: 'M', bpm: 104, energy: 3, chroma: new Array(12).fill(0) };
+    }
+
+    const decim = Math.max(1, Math.floor(sampleRate / 11025));
+    const effRate = sampleRate / decim;
+    const maxSamples = Math.min(Math.floor(effRate * 20), Math.floor(samples.length / decim));
+    const totalDecim = Math.floor(samples.length / decim);
+    const startIdx = Math.max(0, Math.floor((totalDecim - maxSamples) * 0.35));
+
+    const mono = new Float32Array(maxSamples);
+    for (let i = 0; i < maxSamples; i++) mono[i] = samples[(startIdx + i) * decim];
+
+    const frameSize = 2048;
+    const hopSize = 2048;
+    const chroma = new Float64Array(12);
+
+    const notes = [];
+    for (let midi = 36; midi <= 83; midi++) {
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      notes.push({ pc: midi % 12, coeff: 2 * Math.cos((2 * Math.PI * freq) / effRate) });
+    }
+
+    const maleBands = [110, 130, 155, 180, 205].map((f) => 2 * Math.cos((2 * Math.PI * f) / effRate));
+    const femaleBands = [250, 295, 340, 395, 455].map((f) => 2 * Math.cos((2 * Math.PI * f) / effRate));
+    let maleEnergy = 0, femaleEnergy = 0;
+
+    const win = new Float32Array(frameSize);
+    for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (frameSize - 1)));
+
+    function goertzelPower(frame, coeff) {
+      let s0 = 0, s1 = 0, s2 = 0;
+      for (let i = 0; i < frame.length; i++) {
+        s0 = frame[i] + coeff * s1 - s2;
+        s2 = s1; s1 = s0;
+      }
+      return s1 * s1 + s2 * s2 - coeff * s1 * s2;
+    }
+
+    const frame = new Float32Array(frameSize);
+    const availableFrames = Math.max(1, Math.floor((mono.length - frameSize) / hopSize));
+    const frameStep = Math.max(1, Math.floor(availableFrames / 60));
+
+    for (let f = 0; f < availableFrames; f += frameStep) {
+      const base = f * hopSize;
+      for (let i = 0; i < frameSize; i++) frame[i] = mono[base + i] * win[i];
+      for (let n = 0; n < notes.length; n++) {
+        const p = goertzelPower(frame, notes[n].coeff);
+        if (p > 0) chroma[notes[n].pc] += Math.sqrt(p);
+      }
+      for (let b = 0; b < maleBands.length; b++) maleEnergy += Math.sqrt(Math.max(0, goertzelPower(frame, maleBands[b])));
+      for (let b = 0; b < femaleBands.length; b++) femaleEnergy += Math.sqrt(Math.max(0, goertzelPower(frame, femaleBands[b])));
+    }
+
+    let bestKey = '8A', bestCorr = -2, secondCorr = -2;
+    for (const keyInfo of CAMELOT_KEYS) {
+      const profile = keyInfo.mode === 'major' ? KS_MAJOR_PROFILE : KS_MINOR_PROFILE;
+      const rotated = new Array(12);
+      for (let i = 0; i < 12; i++) rotated[i] = chroma[(i + keyInfo.pitchClass) % 12];
+      const corr = pearsonCorrelation(rotated, profile);
+      if (corr > bestCorr) { secondCorr = bestCorr; bestCorr = corr; bestKey = keyInfo.code; }
+      else if (corr > secondCorr) { secondCorr = corr; }
+    }
+
+    const confidence = Math.max(0, Math.min(99, Math.round(((bestCorr + 1) / 2) * 85 + Math.max(0, bestCorr - secondCorr) * 60)));
+    const estimatedVoice = (femaleEnergy / (maleEnergy + 1e-6)) > 1.08 ? 'F' : 'M';
+    const rhythm = estimateBpmAndEnergy(mono, effRate);
+
+    return {
+      key: bestKey,
+      confidence,
+      estimatedVoice,
+      bpm: rhythm.bpm,
+      energy: rhythm.energy,
+      chroma: Array.from(chroma)
+    };
+  }
+
+  function exportM3U(queueItems, lang) {
+    const lines = ['#EXTM3U', '#PLAYLIST:ArmoniaPlay — Lucio Ardito'];
+    for (const item of queueItems) {
+      const t = item.track || item;
+      const dur = Math.round(t.duration || 180);
+      const keyInfo = getKeyInfo(t.key);
+      const bpmPart = t.bpm ? ` | ${t.bpm} BPM` : '';
+      const energyPart = ` | E${getTrackEnergy(t)}`;
+      const meta = `${t.artist} - ${t.title} [${t.voice} | ${t.key}${keyInfo ? ' ' + getKeyLabel(keyInfo, lang) : ''}${bpmPart}${energyPart}]`;
+      lines.push(`#EXTINF:${dur},${meta}`);
+      lines.push(t.fileName || `${t.artist} - ${t.title}.mp3`);
+    }
+    return lines.join('\n') + '\n';
+  }
+
+  return {
+    CAMELOT_KEYS,
+    setLanguage,
+    getLanguage,
+    getKeyInfo,
+    getKeyLabel,
+    normalizeKey,
+    normalizeArtistName,
+    estimateEnergyFromBpm,
+    getTrackEnergy,
+    wrapCamelot,
+    camelotStepDelta,
+    evaluateHarmonicTransition,
+    getCompatibleKeys,
+    evaluateVoiceTransition,
+    voiceShortLabel,
+    voiceCompactLabel,
+    evaluateBpmTransition,
+    evaluateArtistSeparation,
+    evaluateStep,
+    generateSmartPlaylist,
+    parseMetadataFromFilename,
+    parseID3v2,
+    parseFLACCover,
+    parseMP4Cover,
+    extractCoverArt,
+    generateFallbackCoverDataUrl,
+    analyzeAudioSamples,
+    exportM3U
+  };
+});
+
+  </script>
+  <script>
+  (function () {
+    'use strict';
+    const E = window.HarmonicEngine;
+    const STORAGE_KEY = 'armoniaplay_offline_tags_v2';
+    const LANG_STORAGE_KEY = 'armoniaplay_lang_v1';
+
+    const I18N = {
+      it: {
+        metaDesc: 'ArmoniaPlay di Lucio Ardito — Software locale per riprodurre playlist musicali con 5 regole: no-repeat, alternanza M/F, armonia Camelot, curva BPM/energia e separazione artista.',
+        subtitle: 'No-Repeat · Alternanza M/F · Armonia Camelot · BPM/Energia · Separazione Artista',
+        btnAddFiles: '+ Carica File Audio',
+        btnAddFolder: 'Carica Cartella',
+        btnExportM3u: 'Esporta .m3u',
+        btnExportJson: 'Salva Tag',
+        btnImportJson: 'Importa Tag',
+        langSwitchTitle: 'Lingua: Italiano / English',
+        coverWrapTitle: 'Clicca per ingrandire o personalizzare la copertina',
+        nowCoverAlt: 'Copertina brano in esecuzione',
+        session: 'Sessione',
+        readyTitle: 'Pronto per iniziare',
+        readyArtist: 'Premi Riproduci o carica i tuoi file audio locali',
+        sourceDemo: 'Demo',
+        sourceLocal: 'Locale',
+        sourceIdle: 'In attesa',
+        prevTitle: 'Precedente',
+        nextTitle: 'Successivo',
+        btnPlay: '▶ Riproduci',
+        btnPause: '⏸ Pausa',
+        btnReshuffle: 'Rigenera',
+        volLabel: 'Vol',
+        rulesTitle: 'Regole di Riproduzione (5)',
+        compliancePct: (n) => `${n}% conformità`,
+        rule1Title: '1. Non ripetere il brano',
+        rule1Desc: 'Ogni brano viene eseguito una sola volta nel ciclo',
+        rule2Title: '2. Alterna voci Maschili / Femminili',
+        rule2Desc: 'Alternanza M → F → M → F (Duetto/Strum. ponte)',
+        rule3Title: '3. Logica di tonalità (Camelot)',
+        rule3Desc: 'Transizioni armoniche sul Circolo delle Quinte',
+        harmonyStrategyLabel: 'Strategia Armonica',
+        harmony_camelot_classic: 'Camelot Classica (±1 / Rel.)',
+        harmony_camelot_extended: 'Camelot Estesa (+2 / Diag.)',
+        harmony_camelot_ascending: 'Progressione (+1 / +2)',
+        harmony_same_mode_fifths: 'Circolo Quinte (stesso modo)',
+        crossfadeLabel: 'Crossfade Audio',
+        cf_0: 'Disattivato (0s)',
+        cf_2: 'Morbido (2s)',
+        cf_4: 'Radio (4s)',
+        cf_6: 'DJ Blend (6s)',
+        cf_8: 'Lungo (8s)',
+        rule4Title: '4. Regole BPM / Energia',
+        rule4Desc: 'Controlla salti di tempo e andamento energetico (incl. ½/2x)',
+        energyCurveLabel: 'Curva Energetica',
+        flow_smooth: 'Fluida (±Δ BPM)',
+        flow_ramp_up: 'Crescendo (Warm-up)',
+        flow_ramp_down: 'Decrescendo (Cool-down)',
+        flow_wave: 'Onda Energetica (Picco 65%)',
+        bpmToleranceLabel: 'Tolleranza BPM',
+        bpmTol_8: 'Stretta (±8 BPM)',
+        bpmTol_12: 'Bilanciata (±12 BPM)',
+        bpmTol_18: 'Ampia (±18 BPM)',
+        bpmTol_25: 'Libera (±25 BPM)',
+        rule5Title: '5. Distanza minima stesso artista',
+        rule5Desc: 'Evita brani ravvicinati dello stesso artista (anche "feat.")',
+        minArtistGapLabel: 'Brani minimi di altri artisti in mezzo:',
+        gap_1: '≥ 1 (mai consecutivi)',
+        gap_2: '≥ 2 brani',
+        gap_3: '≥ 3 brani',
+        gap_4: '≥ 4 brani',
+        gap_5: '≥ 5 brani',
+        optStrictStop: 'Ferma se nessun brano valido',
+        optAutoCycle: 'Nuovo ciclo a fine playlist',
+        camelotTitle: 'Ruota di Camelot',
+        camelotSub: 'Esterno: Maggiori (B) · Interno: Minori (A)',
+        camelotNone: 'Nessuna',
+        camelotNext: (k) => `Prossima: ${k}`,
+        camelotTooltip: (code, name, cnt) => `${code} · ${name} (${cnt} ${cnt === 1 ? 'brano' : 'brani'})`,
+        keyFilterBtn: (k) => `Filtro: ${k} ✕`,
+        bpmChartTitle: 'Curva BPM & Energia',
+        artistSepOn: (gap, multi) => `Separazione ≥${gap} (${multi} artisti multi-brano)`,
+        artistSepOff: 'Separazione disattiva',
+        tabQueue: 'Coda Intelligente',
+        tabLibrary: 'Libreria & Tag',
+        tabHistory: 'Già Riprodotti',
+        dropTitle: 'Trascina qui i tuoi file audio locali',
+        filenameTagsLabel: 'Tag nome file:',
+        filenameTagsExample: 'Artista - Titolo [F] [8A] [112bpm] [E4].mp3',
+        btnAnalyzeAll: 'Analizza Audio Auto',
+        btnLoadDemo: 'Ripristina Demo',
+        btnClearLib: 'Svuota',
+        analysisDefault: 'Analisi tonalità, BPM ed energia...',
+        analysisTrack: (title) => `Analisi tonalità & BPM: ${title}`,
+        searchPlaceholder: 'Cerca titolo, artista, tonalità o BPM...',
+        voiceFilterAll: 'Tutte le voci',
+        voiceFilterM: 'Solo Maschili (M)',
+        voiceFilterF: 'Solo Femminili (F)',
+        voiceFilterD: 'Duetti (D)',
+        voiceFilterI: 'Strumentali (I)',
+        historyDesc: 'Brani bloccati da No-Repeat e usati per la separazione artista.',
+        btnResetHistory: 'Azzera Cronologia',
+        footerTagline: 'Riproduzione locale 100% offline · 5 regole armoniche, vocali, BPM e artista',
+        modalCoverAlt: 'Copertina ingrandita',
+        btnChangeCover: 'Cambia Copertina',
+        btnClose: 'Chiudi',
+        voiceModalTitleDefault: 'Conferma tipo di voce',
+        voiceModalTitleOne: (title) => `Conferma voce — ${title}`,
+        voiceModalTitleMany: (count, dir) => `Conferma voce — ${count} brani${dir ? ` (Cartella: ${dir})` : ''}`,
+        voiceModalSub: 'Scegli subito se i file o la cartella sono Maschili (M), Femminili (F), Duetto (D) o Strumentale (I)',
+        voiceModalBulkLabel: 'Applica a tutti i brani caricati:',
+        voiceModalFoldersLabel: 'Applica per singola cartella:',
+        bulkM: 'Tutti Maschili (M)',
+        bulkF: 'Tutti Femminili (F)',
+        bulkD: 'Tutti Duetti (D)',
+        bulkI: 'Tutti Strumentali (I)',
+        voiceModalCounts: (m, f, d, i) => `${m} M · ${f} F · ${d} Duetto · ${i} Strum.`,
+        btnCancel: 'Annulla',
+        btnConfirmLoad: 'Conferma e Carica',
+        seqStart: 'Avvio sequenza',
+        uniqueBadge: (played, total) => `✓ Unico (${played}/${total})`,
+        idleHint: 'Premi Riproduci per avviare il motore a 5 regole',
+        violVoice: (n) => `${n} voce`,
+        violHarmony: (n) => `${n} tonalità`,
+        violBpm: (n) => `${n} BPM`,
+        violArtist: (n) => `${n} artista`,
+        strictStopNotice: 'Stop rigoroso attivo: brani non compatibili esclusi.',
+        fallbackNotice: (list) => `Fallback necessari per mantenere tutti i brani senza ripetizioni: ${list}.`,
+        emptyQueue: 'Nessun brano in coda.',
+        emptyLibrary: 'Nessun brano trovato.',
+        emptyHistory: 'Nessun brano ancora riprodotto.',
+        playedTag: '(riprodotto)',
+        energyTitle: 'Energia',
+        removeTrackTitle: 'Rimuovi brano',
+        statusCompleted: 'Playlist completata senza ripetizioni.',
+        statusLoadedConfirmed: (n, cov) => `Caricati ${n} brani locali${cov ? ` (${cov} con copertina)` : ''} con voci confermate.`,
+        statusNoAudio: 'Nessun file audio valido trovato.',
+        statusNeedLocalAnalyze: 'Carica file audio locali per l\'analisi automatica.',
+        statusAnalyzed: (n) => `Analisi completata su ${n} brani locali.`,
+        statusReshuffled: 'Sequenza rigenerata rispettando tutte le 5 regole.',
+        statusNothingExport: 'Nessun brano da esportare.',
+        statusTagsImported: 'Tag importati.',
+        statusInvalidJson: 'JSON non valido.',
+        statusDesktopLoaded: (n, folder) => `Caricati ${n} brani dalla cartella locale: ${folder}`,
+        m3uFilename: 'playlist_armonica.m3u'
+      },
+      en: {
+        metaDesc: 'ArmoniaPlay by Lucio Ardito — 100% offline local music player with 5 smart rules: no-repeat, M/F voice alternation, Camelot harmony, BPM/energy curve, and artist separation.',
+        subtitle: 'No-Repeat · M/F Voice Alternation · Camelot Harmony · BPM/Energy · Artist Separation',
+        btnAddFiles: '+ Load Audio Files',
+        btnAddFolder: 'Load Folder',
+        btnExportM3u: 'Export .m3u',
+        btnExportJson: 'Save Tags',
+        btnImportJson: 'Import Tags',
+        langSwitchTitle: 'Language: Italian / English',
+        coverWrapTitle: 'Click to enlarge or customize cover art',
+        nowCoverAlt: 'Now playing cover art',
+        session: 'Session',
+        readyTitle: 'Ready to start',
+        readyArtist: 'Press Play or load your local audio files',
+        sourceDemo: 'Demo',
+        sourceLocal: 'Local',
+        sourceIdle: 'Ready',
+        prevTitle: 'Previous',
+        nextTitle: 'Next',
+        btnPlay: '▶ Play',
+        btnPause: '⏸ Pause',
+        btnReshuffle: 'Reshuffle',
+        volLabel: 'Vol',
+        rulesTitle: 'Playback Rules (5)',
+        compliancePct: (n) => `${n}% compliance`,
+        rule1Title: '1. Do not repeat tracks',
+        rule1Desc: 'Each track plays only once per cycle',
+        rule2Title: '2. Alternate Male / Female voices',
+        rule2Desc: 'Alternates M → F → M → F (Duet/Inst. bridge)',
+        rule3Title: '3. Harmonic Key Logic (Camelot)',
+        rule3Desc: 'Harmonic transitions on the Circle of Fifths',
+        harmonyStrategyLabel: 'Harmonic Strategy',
+        harmony_camelot_classic: 'Camelot Classic (±1 / Rel.)',
+        harmony_camelot_extended: 'Camelot Extended (+2 / Diag.)',
+        harmony_camelot_ascending: 'Energy Progression (+1 / +2)',
+        harmony_same_mode_fifths: 'Circle of Fifths (same mode)',
+        crossfadeLabel: 'Audio Crossfade',
+        cf_0: 'Off (0s)',
+        cf_2: 'Soft (2s)',
+        cf_4: 'Radio (4s)',
+        cf_6: 'DJ Blend (6s)',
+        cf_8: 'Long (8s)',
+        rule4Title: '4. BPM / Energy Rules',
+        rule4Desc: 'Controls tempo jumps and energy curve (incl. ½/2x)',
+        energyCurveLabel: 'Energy Curve',
+        flow_smooth: 'Smooth (±Δ BPM)',
+        flow_ramp_up: 'Ramp Up (Warm-up)',
+        flow_ramp_down: 'Cool Down (Wind-down)',
+        flow_wave: 'Energy Wave (Peak 65%)',
+        bpmToleranceLabel: 'BPM Tolerance',
+        bpmTol_8: 'Tight (±8 BPM)',
+        bpmTol_12: 'Balanced (±12 BPM)',
+        bpmTol_18: 'Wide (±18 BPM)',
+        bpmTol_25: 'Loose (±25 BPM)',
+        rule5Title: '5. Minimum Same-Artist Distance',
+        rule5Desc: 'Prevents close tracks by the same artist (incl. "feat.")',
+        minArtistGapLabel: 'Min. tracks by other artists in between:',
+        gap_1: '≥ 1 (never consecutive)',
+        gap_2: '≥ 2 tracks',
+        gap_3: '≥ 3 tracks',
+        gap_4: '≥ 4 tracks',
+        gap_5: '≥ 5 tracks',
+        optStrictStop: 'Stop if no valid track',
+        optAutoCycle: 'New cycle at playlist end',
+        camelotTitle: 'Camelot Wheel',
+        camelotSub: 'Outer: Major (B) · Inner: Minor (A)',
+        camelotNone: 'None',
+        camelotNext: (k) => `Next: ${k}`,
+        camelotTooltip: (code, name, cnt) => `${code} · ${name} (${cnt} ${cnt === 1 ? 'track' : 'tracks'})`,
+        keyFilterBtn: (k) => `Filter: ${k} ✕`,
+        bpmChartTitle: 'BPM & Energy Curve',
+        artistSepOn: (gap, multi) => `Separation ≥${gap} (${multi} multi-track artists)`,
+        artistSepOff: 'Separation off',
+        tabQueue: 'Smart Queue',
+        tabLibrary: 'Library & Tags',
+        tabHistory: 'Played History',
+        dropTitle: 'Drag & drop your local audio files here',
+        filenameTagsLabel: 'Filename tags:',
+        filenameTagsExample: 'Artist - Title [F] [8A] [112bpm] [E4].mp3',
+        btnAnalyzeAll: 'Auto-Analyze Audio',
+        btnLoadDemo: 'Restore Demo',
+        btnClearLib: 'Clear',
+        analysisDefault: 'Analyzing key, BPM & energy...',
+        analysisTrack: (title) => `Analyzing key & BPM: ${title}`,
+        searchPlaceholder: 'Search title, artist, key or BPM...',
+        voiceFilterAll: 'All voices',
+        voiceFilterM: 'Male only (M)',
+        voiceFilterF: 'Female only (F)',
+        voiceFilterD: 'Duets (D)',
+        voiceFilterI: 'Instrumentals (I)',
+        historyDesc: 'Tracks locked by No-Repeat and used for artist separation.',
+        btnResetHistory: 'Reset History',
+        footerTagline: '100% offline local playback · 5 harmonic, vocal, BPM & artist rules',
+        modalCoverAlt: 'Enlarged cover art',
+        btnChangeCover: 'Change Cover',
+        btnClose: 'Close',
+        voiceModalTitleDefault: 'Confirm voice type',
+        voiceModalTitleOne: (title) => `Confirm voice — ${title}`,
+        voiceModalTitleMany: (count, dir) => `Confirm voice — ${count} tracks${dir ? ` (Folder: ${dir})` : ''}`,
+        voiceModalSub: 'Choose right away whether the files or folder are Male (M), Female (F), Duet (D), or Instrumental (I)',
+        voiceModalBulkLabel: 'Apply to all loaded tracks:',
+        voiceModalFoldersLabel: 'Apply per subfolder:',
+        bulkM: 'All Male (M)',
+        bulkF: 'All Female (F)',
+        bulkD: 'All Duets (D)',
+        bulkI: 'All Instrumentals (I)',
+        voiceModalCounts: (m, f, d, i) => `${m} M · ${f} F · ${d} Duet · ${i} Inst.`,
+        btnCancel: 'Cancel',
+        btnConfirmLoad: 'Confirm & Load',
+        seqStart: 'Sequence start',
+        uniqueBadge: (played, total) => `✓ Unique (${played}/${total})`,
+        idleHint: 'Press Play to start the 5-rule engine',
+        violVoice: (n) => `${n} voice`,
+        violHarmony: (n) => `${n} key`,
+        violBpm: (n) => `${n} BPM`,
+        violArtist: (n) => `${n} artist`,
+        strictStopNotice: 'Strict stop active: incompatible tracks excluded.',
+        fallbackNotice: (list) => `Fallbacks required to keep all tracks without repeats: ${list}.`,
+        emptyQueue: 'No tracks in queue.',
+        emptyLibrary: 'No tracks found.',
+        emptyHistory: 'No tracks played yet.',
+        playedTag: '(played)',
+        energyTitle: 'Energy',
+        removeTrackTitle: 'Remove track',
+        statusCompleted: 'Playlist completed with no repeats.',
+        statusLoadedConfirmed: (n, cov) => `Loaded ${n} local tracks${cov ? ` (${cov} with cover art)` : ''} with confirmed voices.`,
+        statusNoAudio: 'No valid audio files found.',
+        statusNeedLocalAnalyze: 'Load local audio files for automatic analysis.',
+        statusAnalyzed: (n) => `Analysis completed on ${n} local tracks.`,
+        statusReshuffled: 'Sequence reshuffled following all 5 rules.',
+        statusNothingExport: 'No tracks to export.',
+        statusTagsImported: 'Tags imported.',
+        statusInvalidJson: 'Invalid JSON file.',
+        statusDesktopLoaded: (n, folder) => `Loaded ${n} tracks from local folder: ${folder}`,
+        m3uFilename: 'harmonic_playlist.m3u'
+      }
+    };
+
+    function detectInitialLanguage() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const qp = (params.get('lang') || '').toLowerCase();
+        if (qp === 'it' || qp === 'en') {
+          localStorage.setItem(LANG_STORAGE_KEY, qp);
+          return qp;
+        }
+      } catch (_) {}
+      try {
+        const saved = localStorage.getItem(LANG_STORAGE_KEY);
+        if (saved === 'it' || saved === 'en') return saved;
+      } catch (_) {}
+      return 'it';
+    }
+
+    let currentLang = detectInitialLanguage();
+    E.setLanguage(currentLang);
+
+    function L(key, ...args) {
+      const dict = I18N[currentLang] || I18N.it;
+      const val = dict[key] !== undefined ? dict[key] : I18N.it[key];
+      return typeof val === 'function' ? val(...args) : val;
+    }
+
+    let lastStatusSpec = null;
+
+    function applyStaticI18n() {
+      document.documentElement.lang = currentLang;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', L('metaDesc'));
+
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const k = el.getAttribute('data-i18n');
+        const txt = L(k);
+        if (typeof txt === 'string') el.textContent = txt;
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        const k = el.getAttribute('data-i18n-placeholder');
+        const txt = L(k);
+        if (typeof txt === 'string') el.setAttribute('placeholder', txt);
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+        const k = el.getAttribute('data-i18n-title');
+        const txt = L(k);
+        if (typeof txt === 'string') el.setAttribute('title', txt);
+      });
+      document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+        const k = el.getAttribute('data-i18n-alt');
+        const txt = L(k);
+        if (typeof txt === 'string') el.setAttribute('alt', txt);
+      });
+
+      const btnIt = document.getElementById('btnLangIt');
+      const btnEn = document.getElementById('btnLangEn');
+      if (btnIt && btnEn) {
+        btnIt.classList.toggle('active', currentLang === 'it');
+        btnEn.classList.toggle('active', currentLang === 'en');
+        btnIt.setAttribute('aria-pressed', String(currentLang === 'it'));
+        btnEn.setAttribute('aria-pressed', String(currentLang === 'en'));
+      }
+    }
+
+    function refreshTransitionLabels() {
+      let prevTrack = null;
+      let lastGender = null;
+      const recentArtists = [];
+      const totalSeq = state.history.length + state.queue.length;
+      let stepIdx = 0;
+
+      state.history.forEach((item) => {
+        const prog = totalSeq > 1 ? stepIdx / (totalSeq - 1) : 0;
+        item.transition = E.evaluateStep(prevTrack, lastGender, item.track, state.rules, { recentArtists: [...recentArtists], progress: prog });
+        prevTrack = item.track;
+        if (item.track.voice === 'M' || item.track.voice === 'F') lastGender = item.track.voice;
+        const na = E.normalizeArtistName(item.track.artist);
+        if (na) recentArtists.push(na);
+        stepIdx++;
+      });
+
+      if (state.currentItem && (!state.history.length || state.history[state.history.length - 1] !== state.currentItem)) {
+        const prog = totalSeq > 1 ? stepIdx / (totalSeq - 1) : 0;
+        state.currentItem.transition = E.evaluateStep(prevTrack, lastGender, state.currentItem.track, state.rules, { recentArtists: [...recentArtists], progress: prog });
+        prevTrack = state.currentItem.track;
+        if (state.currentItem.track.voice === 'M' || state.currentItem.track.voice === 'F') lastGender = state.currentItem.track.voice;
+        const na = E.normalizeArtistName(state.currentItem.track.artist);
+        if (na) recentArtists.push(na);
+      }
+
+      const qTotal = state.queue.length + (prevTrack ? 1 : 0);
+      state.queue.forEach((item, idx) => {
+        const prog = qTotal > 1 ? (idx + (prevTrack ? 1 : 0)) / (qTotal - 1) : 0;
+        item.transition = E.evaluateStep(prevTrack, lastGender, item.track, state.rules, { recentArtists: [...recentArtists], progress: prog });
+        prevTrack = item.track;
+        if (item.track.voice === 'M' || item.track.voice === 'F') lastGender = item.track.voice;
+        const na = E.normalizeArtistName(item.track.artist);
+        if (na) recentArtists.push(na);
+      });
+    }
+
+    function setAppLanguage(lang) {
+      currentLang = lang === 'en' ? 'en' : 'it';
+      E.setLanguage(currentLang);
+      try { localStorage.setItem(LANG_STORAGE_KEY, currentLang); } catch (_) {}
+      applyStaticI18n();
+      refreshTransitionLabels();
+      renderAll();
+      if (pendingImportTracks) renderVoiceConfirmModal();
+      const statusBanner = document.getElementById('statusBanner');
+      if (lastStatusSpec && statusBanner && !statusBanner.classList.contains('hidden')) {
+        document.getElementById('statusText').textContent = L(lastStatusSpec.key, ...lastStatusSpec.args);
+      }
+    }
+
+    function createDemoTracks() {
+      return [
+        { id: 'demo_1',  title: 'Riflessi d\'Oro',      artist: 'Simone Serra',             voice: 'M', key: '7B',  bpm: 92,  energy: 2, duration: 28, isDemo: true, fileName: 'Simone Serra - Riflessi d Oro [M] [7B] [92bpm].mp3' },
+        { id: 'demo_2',  title: 'Ultimo Treno',         artist: 'Valeria Neri',             voice: 'F', key: '7A',  bpm: 94,  energy: 2, duration: 27, isDemo: true, fileName: 'Valeria Neri - Ultimo Treno [F] [7A] [94bpm].mp3' },
+        { id: 'demo_3',  title: 'Notte Sul Porto',      artist: 'Marco Conti',              voice: 'M', key: '8A',  bpm: 96,  energy: 2, duration: 28, isDemo: true, fileName: 'Marco Conti - Notte Sul Porto [M] [8A] [96bpm].mp3' },
+        { id: 'demo_4',  title: 'Vento di Settembre',   artist: 'Elena Rinaldi',            voice: 'F', key: '8B',  bpm: 100, energy: 3, duration: 26, isDemo: true, fileName: 'Elena Rinaldi - Vento di Settembre [F] [8B] [100bpm].mp3' },
+        { id: 'demo_5',  title: 'Strade di Vetro',      artist: 'Luca Ferri',               voice: 'M', key: '9B',  bpm: 104, energy: 3, duration: 28, isDemo: true, fileName: 'Luca Ferri - Strade di Vetro [M] [9B] [104bpm].mp3' },
+        { id: 'demo_6',  title: 'Luce d\'Inverno',      artist: 'Chiara Moretti',           voice: 'F', key: '9A',  bpm: 108, energy: 3, duration: 27, isDemo: true, fileName: 'Chiara Moretti - Luce d Inverno [F] [9A] [108bpm].mp3' },
+        { id: 'demo_7',  title: 'Onda Lunga',           artist: 'Matteo Greco',             voice: 'M', key: '10A', bpm: 112, energy: 4, duration: 28, isDemo: true, fileName: 'Matteo Greco - Onda Lunga [M] [10A] [112bpm].mp3' },
+        { id: 'demo_8',  title: 'Sospesa Nel Blu',      artist: 'Sara Pellegrini',          voice: 'F', key: '10B', bpm: 116, energy: 4, duration: 26, isDemo: true, fileName: 'Sara Pellegrini - Sospesa Nel Blu [F] [10B] [116bpm].mp3' },
+        { id: 'demo_9',  title: 'Piazza Vuota',         artist: 'Marco Conti feat. Davide', voice: 'M', key: '11B', bpm: 120, energy: 4, duration: 28, isDemo: true, fileName: 'Marco Conti feat. Davide - Piazza Vuota [M] [11B] [120bpm].mp3' },
+        { id: 'demo_10', title: 'Passi Leggeri',        artist: 'Giulia De Luca',           voice: 'F', key: '11A', bpm: 122, energy: 5, duration: 27, isDemo: true, fileName: 'Giulia De Luca - Passi Leggeri [F] [11A] [122bpm].mp3' },
+        { id: 'demo_11', title: 'Cielo di Piombo',      artist: 'Andrea Marini',            voice: 'M', key: '12A', bpm: 118, energy: 4, duration: 28, isDemo: true, fileName: 'Andrea Marini - Cielo di Piombo [M] [12A] [118bpm].mp3' },
+        { id: 'demo_12', title: 'Sabbia Chiara',        artist: 'Elena Rinaldi',            voice: 'F', key: '1A',  bpm: 114, energy: 4, duration: 26, isDemo: true, fileName: 'Elena Rinaldi - Sabbia Chiara [F] [1A] [114bpm].mp3' },
+        { id: 'demo_13', title: 'Marea Calma',          artist: 'Davide Galli',             voice: 'M', key: '1B',  bpm: 110, energy: 3, duration: 27, isDemo: true, fileName: 'Davide Galli - Marea Calma [M] [1B] [110bpm].mp3' },
+        { id: 'demo_14', title: 'Alba di Sale',         artist: 'Federica Vitale',          voice: 'F', key: '2B',  bpm: 106, energy: 3, duration: 26, isDemo: true, fileName: 'Federica Vitale - Alba di Sale [F] [2B] [106bpm].mp3' }
+      ];
+    }
+
+    let audioCtx = null, masterGain = null, analyserNode = null;
+    let deckASource = null, deckBSource = null, deckAGain = null, deckBGain = null, synthGain = null;
+    let decksRoutedToWebAudio = false, masterVolume = 0.8;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = masterVolume;
+        synthGain = audioCtx.createGain();
+        synthGain.gain.value = 1;
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 128;
+        analyserNode.smoothingTimeConstant = 0.8;
+        synthGain.connect(masterGain);
+        masterGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+    class DemoSynth {
+      constructor() { this.playing = false; this.elapsed = 0; this.duration = 28; this.timer = null; this.stepIdx = 0; this.lastTick = 0; this.onEnded = null; }
+      start(track, offset = 0, fadeInSec = 0) {
+        this.stop(); ensureAudioContext();
+        this.track = track; this.duration = track.duration || 28; this.elapsed = offset;
+        this.playing = true; this.stepIdx = Math.floor(offset * 2); this.lastTick = performance.now();
+        if (synthGain && audioCtx) {
+          const now = audioCtx.currentTime;
+          synthGain.gain.cancelScheduledValues(now);
+          if (fadeInSec > 0.05) {
+            synthGain.gain.setValueAtTime(0.001, now);
+            synthGain.gain.linearRampToValueAtTime(1.0, now + Math.min(fadeInSec, 2.5));
+          } else {
+            synthGain.gain.setValueAtTime(1.0, now);
+          }
+        }
+        this._step();
+        this.timer = setInterval(() => this._tick(), Math.round((60 / (track.bpm || 100)) * 500));
+      }
+      pause() { this.playing = false; clearInterval(this.timer); this.timer = null; }
+      resume() { if (this.track) this.start(this.track, this.elapsed, 0.15); }
+      seek(sec) { this.elapsed = Math.max(0, Math.min(sec, this.duration)); this.stepIdx = Math.floor(this.elapsed * 2); }
+      stop() { this.playing = false; clearInterval(this.timer); this.timer = null; }
+      _tick() {
+        if (!this.playing) return;
+        const now = performance.now();
+        this.elapsed += (now - this.lastTick) / 1000; this.lastTick = now;
+        const cf = state.rules.crossfadeSec || 0;
+        const rem = this.duration - this.elapsed;
+        if (cf > 0 && synthGain && audioCtx && rem <= Math.min(cf, 3) && rem > 0) {
+          const ratio = Math.max(0.001, rem / Math.min(cf, 3));
+          synthGain.gain.setTargetAtTime(Math.sin(ratio * Math.PI * 0.5), audioCtx.currentTime, 0.05);
+        }
+        if (this.elapsed >= this.duration) { this.stop(); if (this.onEnded) this.onEnded(); return; }
+        this._step();
+      }
+      _step() {
+        const ki = E.getKeyInfo(this.track.key) || E.getKeyInfo('8A');
+        const isMin = ki.mode === 'minor';
+        const scale = isMin ? [0,2,3,5,7,8,10] : [0,2,4,5,7,9,11];
+        const prog = isMin ? [0,5,2,6] : [0,4,5,3];
+        const t0 = audioCtx.currentTime, bar = Math.floor(this.stepIdx / 8) % 4, beat = this.stepIdx % 8, deg = prog[bar];
+        const eb = 0.75 + E.getTrackEnergy(this.track) * 0.09;
+        if (beat === 0) {
+          [deg, (deg + 2) % 7, (deg + 4) % 7].forEach((d, i) => this._tone(midiToFreq(48 + ki.pitchClass + scale[d] + (i ? 12 : 0)), t0, 1.8, 0.052 * eb, 'triangle', 1050 + E.getTrackEnergy(this.track) * 140));
+          this._tone(midiToFreq(36 + ki.pitchClass + scale[deg]), t0, 1.5, 0.088 * eb, 'sine', 380);
+        }
+        if (E.getTrackEnergy(this.track) >= 3 && beat % 2 === 0) this._tone(midiToFreq(36 + ki.pitchClass + scale[deg]), t0, 0.14, 0.04 * eb, 'sine', 220);
+        const pat = [0,2,4,2,5,4,2,1];
+        if (beat % 2 === 0 || beat === 5) {
+          const isF = this.track.voice === 'F';
+          const nd = (deg + pat[(this.stepIdx + (this.track.id.charCodeAt(5) || 0)) % pat.length]) % 7;
+          this._vocal(midiToFreq((isF ? 60 : 48) + ki.pitchClass + scale[nd]), t0, 0.46, (isF ? 0.09 : 0.105) * eb, isF);
+        }
+        this.stepIdx++;
+      }
+      _tone(freq, t0, dur, gVal, type, cut) {
+        const osc = audioCtx.createOscillator(), flt = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, t0);
+        flt.type = 'lowpass'; flt.frequency.setValueAtTime(cut, t0);
+        g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(gVal, t0 + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(flt); flt.connect(g); g.connect(synthGain || masterGain); osc.start(t0); osc.stop(t0 + dur + 0.05);
+      }
+      _vocal(freq, t0, dur, gVal, isF) {
+        const osc = audioCtx.createOscillator(), f1 = audioCtx.createBiquadFilter(), f2 = audioCtx.createBiquadFilter(), g = audioCtx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, t0);
+        f1.type = 'bandpass'; f1.frequency.value = isF ? 760 : 510; f1.Q.value = 3.2;
+        f2.type = 'bandpass'; f2.frequency.value = isF ? 1720 : 1120; f2.Q.value = 3.8;
+        g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(gVal, t0 + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(f1); osc.connect(f2); f1.connect(g); f2.connect(g); g.connect(synthGain || masterGain); osc.start(t0); osc.stop(t0 + dur + 0.05);
+      }
+    }
+
+    const synth = new DemoSynth(), deckA = document.getElementById('deckA'), deckB = document.getElementById('deckB');
+    let activeDeck = deckA, crossfadeTriggered = false;
+    let activeFade = null; // { outDeck, inDeck, durationMs, elapsedMs, lastTs, rafId }
+
+    const state = {
+      library: createDemoTracks(), queue: [], history: [], playedIds: new Set(),
+      currentItem: null, lastGenderVoice: null, isPlaying: false, keyFilter: null,
+      searchQuery: '', voiceFilter: 'ALL',
+      stats: { complianceRate: 100, stoppedEarly: false, voiceViolations: 0, harmonyViolations: 0, bpmViolations: 0, artistViolations: 0 },
+      rules: { noRepeat: true, alternateVoice: true, harmonicLogic: true, harmonyMode: 'camelot_classic', bpmLogic: true, energyFlow: 'smooth', maxBpmDelta: 12, artistSeparation: true, minArtistGap: 3, strictStop: false, autoCycle: false, crossfadeSec: 2 }
+    };
+
+    const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const formatTime = (sec) => (!Number.isFinite(sec) || sec < 0) ? '0:00' : `${Math.floor(sec / 60)}:${Math.floor(sec % 60) < 10 ? '0' : ''}${Math.floor(sec % 60)}`;
+    const loadSavedTags = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (_) { return {}; } };
+    const persistTrackTag = (t) => {
+      if (!t || t.isDemo) return;
+      try {
+        const db = loadSavedTags();
+        db[`${t.fileName || t.title}::${t.fileSize || 0}`] = { title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: t.energy };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      } catch (_) {}
+    };
+    const showStatus = (m) => { lastStatusSpec = null; document.getElementById('statusText').textContent = m; document.getElementById('statusBanner').classList.remove('hidden'); };
+    const showStatusKey = (key, ...args) => { lastStatusSpec = { key, args }; document.getElementById('statusText').textContent = L(key, ...args); document.getElementById('statusBanner').classList.remove('hidden'); };
+    const getRecentArtists = () => state.history.map((h) => h.track.artist);
+
+    function rebuildQueue() {
+      const plan = E.generateSmartPlaylist(state.library, {
+        playedIds: Array.from(state.playedIds),
+        currentTrack: state.currentItem ? state.currentItem.track : null,
+        lastGenderVoice: state.lastGenderVoice,
+        recentArtists: getRecentArtists(),
+        strictStop: state.rules.strictStop,
+        rules: state.rules
+      });
+      state.queue = plan.queue; state.stats = plan.stats; renderAll();
+    }
+
+    function getDeckGainNode(deck) {
+      return deck === deckA ? deckAGain : deckBGain;
+    }
+
+    function setDeckGain(deck, level, smooth = true) {
+      const clamped = Math.max(0, Math.min(1, level));
+      const gNode = getDeckGainNode(deck);
+      if (decksRoutedToWebAudio && gNode && audioCtx) {
+        deck.volume = 1;
+        const now = audioCtx.currentTime;
+        gNode.gain.cancelScheduledValues(now);
+        if (smooth) gNode.gain.setTargetAtTime(clamped, now, 0.015);
+        else gNode.gain.setValueAtTime(clamped, now);
+      } else {
+        deck.volume = clamped * masterVolume;
+      }
+    }
+
+    function cancelActiveFade(finalizeOutgoing = true) {
+      if (!activeFade) return;
+      if (activeFade.rafId) cancelAnimationFrame(activeFade.rafId);
+      if (finalizeOutgoing && activeFade.outDeck) {
+        setDeckGain(activeFade.outDeck, 0, false);
+        activeFade.outDeck.pause();
+      }
+      if (activeFade.inDeck) {
+        setDeckGain(activeFade.inDeck, 1, false);
+      }
+      activeFade = null;
+    }
+
+    function runFadeStep(ts) {
+      if (!activeFade) return;
+      if (!state.isPlaying) {
+        activeFade.lastTs = ts;
+        activeFade.rafId = requestAnimationFrame(runFadeStep);
+        return;
+      }
+      const dt = Math.max(0, ts - activeFade.lastTs);
+      activeFade.lastTs = ts;
+      activeFade.elapsedMs += dt;
+      const p = Math.min(1, activeFade.elapsedMs / activeFade.durationMs);
+      // Equal-power broadcast crossfade curve (mantiene costante il volume percepito)
+      const outGain = Math.cos(p * Math.PI * 0.5);
+      const inGain = Math.sin(p * Math.PI * 0.5);
+      if (activeFade.outDeck) setDeckGain(activeFade.outDeck, outGain, true);
+      if (activeFade.inDeck) setDeckGain(activeFade.inDeck, inGain, true);
+
+      if (p >= 1) {
+        const finishedOut = activeFade.outDeck;
+        const finishedIn = activeFade.inDeck;
+        activeFade = null;
+        if (finishedOut) {
+          setDeckGain(finishedOut, 0, false);
+          finishedOut.pause();
+        }
+        if (finishedIn) setDeckGain(finishedIn, 1, false);
+      } else {
+        activeFade.rafId = requestAnimationFrame(runFadeStep);
+      }
+    }
+
+    function startEqualPowerCrossfade(outDeck, inDeck, durationSec) {
+      cancelActiveFade(true);
+      const ms = Math.max(150, Math.round(durationSec * 1000));
+      if (outDeck) setDeckGain(outDeck, 1, false);
+      if (inDeck) setDeckGain(inDeck, 0.001, false);
+      activeFade = { outDeck, inDeck, durationMs: ms, elapsedMs: 0, lastTs: performance.now(), rafId: null };
+      activeFade.rafId = requestAnimationFrame(runFadeStep);
+    }
+
+    function stopAllAudio() {
+      cancelActiveFade(true);
+      synth.stop();
+      deckA.pause();
+      deckB.pause();
+      setDeckGain(deckA, 1, false);
+      setDeckGain(deckB, 1, false);
+      crossfadeTriggered = false;
+    }
+
+    function attachDecks() {
+      ensureAudioContext();
+      try {
+        if (!deckASource) {
+          deckASource = audioCtx.createMediaElementSource(deckA);
+          deckAGain = audioCtx.createGain();
+          deckAGain.gain.value = 1;
+          deckASource.connect(deckAGain);
+          deckAGain.connect(masterGain);
+        }
+        if (!deckBSource) {
+          deckBSource = audioCtx.createMediaElementSource(deckB);
+          deckBGain = audioCtx.createGain();
+          deckBGain.gain.value = 1;
+          deckBSource.connect(deckBGain);
+          deckBGain.connect(masterGain);
+        }
+        decksRoutedToWebAudio = true;
+        deckA.volume = 1;
+        deckB.volume = 1;
+      } catch (_) {
+        decksRoutedToWebAudio = false;
+      }
+    }
+
+    function playItem(item, opts = {}) {
+      if (!item || !item.track) return;
+      const t = item.track;
+      const cf = state.rules.crossfadeSec || 0;
+      const prevWasLocalPlaying = state.isPlaying && state.currentItem && state.currentItem.track && !state.currentItem.track.isDemo && state.currentItem.track.objectUrl && !activeDeck.paused;
+      const wantCrossfade = Boolean(opts.useCrossfade || (cf > 0 && prevWasLocalPlaying && !t.isDemo && t.objectUrl));
+      const fadeDuration = opts.fadeSec != null ? opts.fadeSec : (opts.useCrossfade ? cf : Math.min(cf, 2.0));
+
+      state.currentItem = item;
+      if (state.rules.noRepeat) state.playedIds.add(t.id);
+      if (t.voice === 'M' || t.voice === 'F') state.lastGenderVoice = t.voice;
+      if (!state.history.length || state.history[state.history.length - 1].track.id !== t.id) state.history.push(item);
+      rebuildQueue();
+
+      if (t.isDemo || !t.objectUrl) {
+        stopAllAudio();
+        synth.onEnded = handleTrackEnded;
+        synth.start(t, 0, cf > 0 ? Math.min(cf, 1.5) : 0);
+        state.isPlaying = true;
+      } else {
+        attachDecks();
+        synth.stop();
+        const outDeck = activeDeck;
+        const inDeck = activeDeck === deckA ? deckB : deckA;
+
+        if (wantCrossfade && fadeDuration > 0.15 && outDeck !== inDeck && !outDeck.paused) {
+          // Cancella solo un eventuale fade precedente senza fermare outDeck (che diventa il brano in uscita!)
+          if (activeFade && activeFade.rafId) cancelAnimationFrame(activeFade.rafId);
+          if (activeFade && activeFade.outDeck && activeFade.outDeck !== outDeck) {
+            setDeckGain(activeFade.outDeck, 0, false);
+            activeFade.outDeck.pause();
+          }
+          activeFade = null;
+
+          activeDeck = inDeck;
+          crossfadeTriggered = false;
+          inDeck.pause();
+          inDeck.src = t.objectUrl;
+          inDeck.currentTime = 0;
+          setDeckGain(inDeck, 0.001, false);
+          inDeck.play().then(() => {
+            state.isPlaying = true;
+            startEqualPowerCrossfade(outDeck, inDeck, fadeDuration);
+            renderPlayer();
+          }).catch(() => {
+            stopAllAudio();
+            state.isPlaying = false;
+            renderPlayer();
+          });
+        } else {
+          stopAllAudio();
+          activeDeck = inDeck;
+          crossfadeTriggered = false;
+          inDeck.src = t.objectUrl;
+          inDeck.currentTime = 0;
+          setDeckGain(inDeck, 1, false);
+          inDeck.play().then(() => {
+            state.isPlaying = true;
+            renderPlayer();
+          }).catch(() => {
+            state.isPlaying = false;
+            renderPlayer();
+          });
+        }
+      }
+      state.isPlaying = true;
+      renderAll();
+    }
+
+    function handleTrackEnded() {
+      if (state.queue.length > 0) playItem(state.queue[0], { useCrossfade: false });
+      else if (state.rules.autoCycle && state.library.length > 1) {
+        const lastId = state.currentItem ? state.currentItem.track.id : null;
+        state.playedIds.clear(); if (lastId) state.playedIds.add(lastId);
+        rebuildQueue(); if (state.queue.length > 0) playItem(state.queue[0], { useCrossfade: false });
+      } else { state.isPlaying = false; showStatusKey('statusCompleted'); renderAll(); }
+    }
+
+    function checkAutoCrossfade() {
+      if (!state.isPlaying || !state.currentItem || state.currentItem.track.isDemo) return;
+      const cf = state.rules.crossfadeSec || 0;
+      if (cf <= 0 || crossfadeTriggered || state.queue.length === 0) return;
+      const deck = activeDeck;
+      if (!deck || deck.paused || !Number.isFinite(deck.duration) || deck.duration <= cf + 1.2) return;
+      const remaining = deck.duration - deck.currentTime;
+      if (deck.currentTime > 0.5 && remaining > 0.1 && remaining <= cf) {
+        crossfadeTriggered = true;
+        playItem(state.queue[0], { useCrossfade: true, fadeSec: Math.min(cf, remaining) });
+      }
+    }
+
+    [deckA, deckB].forEach((deck) => {
+      deck.addEventListener('ended', () => {
+        if (deck === activeDeck) handleTrackEnded();
+        else setDeckGain(deck, 0, false);
+      });
+      deck.addEventListener('timeupdate', () => {
+        if (deck === activeDeck) checkAutoCrossfade();
+      });
+    });
+    // Controllo ad alta precisione ogni 60ms per innescare il crossfade al millisecondo esatto
+    setInterval(checkAutoCrossfade, 60);
+
+    function getPos() {
+      if (!state.currentItem) return { current: 0, total: 0 };
+      const t = state.currentItem.track;
+      if (t.isDemo || !t.objectUrl) return { current: synth.elapsed, total: synth.duration || 28 };
+      return { current: activeDeck.currentTime || 0, total: (Number.isFinite(activeDeck.duration) && activeDeck.duration > 0) ? activeDeck.duration : (t.duration || 0) };
+    }
+
+    function coverToObjectUrl(coverObj) {
+      if (!coverObj || !coverObj.bytes) return null;
+      return URL.createObjectURL(new Blob([coverObj.bytes], { type: coverObj.mime || 'image/jpeg' }));
+    }
+
+    function getTrackCoverUrl(track) {
+      if (!track) return E.generateFallbackCoverDataUrl({ key: '8A', voice: 'M' });
+      if (track.coverUrl) return track.coverUrl;
+      return E.generateFallbackCoverDataUrl(track);
+    }
+
+    async function extractMetadataAndCoverFromFile(file) {
+      let id3 = { title: null, artist: null, key: null, bpm: null, cover: null, tagTotalBytes: 0 };
+      let cover = null;
+      try {
+        // Leggi fino a 512KB iniziali; se il tag ID3 è più grande (es. copertina HD), leggi l'intero tag fino a 6MB
+        let headBuf = await file.slice(0, Math.min(file.size, 524288)).arrayBuffer();
+        id3 = E.parseID3v2(headBuf);
+        if (id3.tagTotalBytes > headBuf.byteLength && id3.tagTotalBytes <= 6 * 1024 * 1024) {
+          headBuf = await file.slice(0, Math.min(file.size, id3.tagTotalBytes + 64)).arrayBuffer();
+          id3 = E.parseID3v2(headBuf);
+        }
+        cover = id3.cover || E.extractCoverArt(headBuf);
+        // Per M4A con atom moov/covr più avanti (fino a 2MB)
+        if (!cover && /\.(m4a|mp4|aac)$/i.test(file.name) && file.size > 524288) {
+          const mp4Buf = await file.slice(0, Math.min(file.size, 2 * 1024 * 1024)).arrayBuffer();
+          cover = E.parseMP4Cover(mp4Buf);
+        }
+      } catch (_) {}
+      return { id3, coverUrl: coverToObjectUrl(cover) };
+    }
+
+    function inferVoiceFromFolderPath(dirPath) {
+      if (!dirPath) return null;
+      const low = dirPath.toLowerCase();
+      if (/(?:^|[\/_\-\s])(femminil\w*|female|donne|donna|voci[\s_\-]*f)(?:$|[\/_\-\s])/.test(low)) return 'F';
+      if (/(?:^|[\/_\-\s])(maschil\w*|male|uomini|uomo|voci[\s_\-]*m)(?:$|[\/_\-\s])/.test(low)) return 'M';
+      if (/(?:^|[\/_\-\s])(duett\w*|duet\w*|misti|misto)(?:$|[\/_\-\s])/.test(low)) return 'D';
+      if (/(?:^|[\/_\-\s])(strumental\w*|instrumental\w*|basi|base|piano|jazz[\s_\-]*inst)(?:$|[\/_\-\s])/.test(low)) return 'I';
+      return null;
+    }
+
+    let pendingImportTracks = null;
+
+    function renderVoiceConfirmModal() {
+      if (!pendingImportTracks) return;
+      const list = pendingImportTracks;
+      const dirs = [...new Set(list.map((t) => t.folderName).filter(Boolean))];
+      const titleEl = document.getElementById('voiceModalTitle');
+      titleEl.textContent = list.length === 1
+        ? L('voiceModalTitleOne', list[0].title)
+        : L('voiceModalTitleMany', list.length, dirs.length === 1 ? dirs[0] : '');
+
+      const duetLbl = E.voiceCompactLabel('D');
+      const instLbl = E.voiceCompactLabel('I');
+
+      // Se ci sono più sottocartelle, mostra controlli rapidi per ogni sottocartella
+      const foldersWrap = document.getElementById('voiceModalFolders');
+      if (dirs.length > 1) {
+        foldersWrap.classList.remove('hidden');
+        foldersWrap.innerHTML = `<div style="font-size:11px;color:var(--muted);font-weight:600;">${escapeHtml(L('voiceModalFoldersLabel'))}</div>` +
+          dirs.map((d) => {
+            const cnt = list.filter((t) => t.folderName === d).length;
+            return `<div class="row-between" style="font-size:12px;">
+              <span class="truncate" style="max-width:340px;">📁 ${escapeHtml(d)} <span style="color:var(--muted);">(${cnt})</span></span>
+              <div class="v-seg">
+                <button type="button" class="v-btn" data-folder-voice="M" data-folder="${escapeHtml(d)}">M</button>
+                <button type="button" class="v-btn" data-folder-voice="F" data-folder="${escapeHtml(d)}">F</button>
+                <button type="button" class="v-btn" data-folder-voice="D" data-folder="${escapeHtml(d)}">${duetLbl}</button>
+                <button type="button" class="v-btn" data-folder-voice="I" data-folder="${escapeHtml(d)}">${instLbl}</button>
+              </div>
+            </div>`;
+          }).join('');
+      } else {
+        foldersWrap.classList.add('hidden');
+        foldersWrap.innerHTML = '';
+      }
+
+      document.getElementById('voiceModalList').innerHTML = list.map((t, idx) => `
+        <div class="voice-row">
+          <div style="min-width:0;flex:1;">
+            <div class="truncate" style="font-size:12.5px;font-weight:600;">${escapeHtml(t.title)}</div>
+            <div class="truncate" style="font-size:11px;color:var(--muted);">${escapeHtml(t.artist)}${t.folderName ? ` · 📁 ${escapeHtml(t.folderName)}` : ''}</div>
+          </div>
+          <div class="v-seg">
+            <button type="button" class="v-btn ${t.voice === 'M' ? 'active-M' : ''}" data-item-idx="${idx}" data-item-voice="M">M</button>
+            <button type="button" class="v-btn ${t.voice === 'F' ? 'active-F' : ''}" data-item-idx="${idx}" data-item-voice="F">F</button>
+            <button type="button" class="v-btn ${t.voice === 'D' ? 'active-D' : ''}" data-item-idx="${idx}" data-item-voice="D">${duetLbl}</button>
+            <button type="button" class="v-btn ${t.voice === 'I' ? 'active-I' : ''}" data-item-idx="${idx}" data-item-voice="I">${instLbl}</button>
+          </div>
+        </div>
+      `).join('');
+
+      const cM = list.filter((t) => t.voice === 'M').length;
+      const cF = list.filter((t) => t.voice === 'F').length;
+      const cD = list.filter((t) => t.voice === 'D').length;
+      const cI = list.filter((t) => t.voice === 'I').length;
+      document.getElementById('voiceModalCounts').textContent = L('voiceModalCounts', cM, cF, cD, cI);
+    }
+
+    function openVoiceConfirmationModal(tracks) {
+      pendingImportTracks = tracks;
+      renderVoiceConfirmModal();
+      document.getElementById('voiceConfirmModal').classList.remove('hidden');
+    }
+
+    function cancelVoiceConfirmationModal() {
+      if (pendingImportTracks) {
+        pendingImportTracks.forEach((t) => { if (t.objectUrl) URL.revokeObjectURL(t.objectUrl); });
+        pendingImportTracks = null;
+      }
+      document.getElementById('voiceConfirmModal').classList.add('hidden');
+    }
+
+    async function confirmVoiceModalAndCommit() {
+      if (!pendingImportTracks) return;
+      const added = pendingImportTracks;
+      pendingImportTracks = null;
+      document.getElementById('voiceConfirmModal').classList.add('hidden');
+
+      if (state.library.length && state.library.every((t) => t.isDemo)) {
+        stopAllAudio(); state.library = []; state.history = []; state.playedIds.clear(); state.currentItem = null; state.lastGenderVoice = null; state.isPlaying = false;
+      }
+
+      added.forEach((t) => {
+        t.voiceAuto = false; // Confermato esplicitamente dall'utente: non verrà sovrascritto dall'analisi
+        persistTrackTag(t);
+      });
+
+      state.library.push(...added);
+      rebuildQueue();
+      const withCover = added.filter((t) => t.coverUrl).length;
+      showStatusKey('statusLoadedConfirmed', added.length, withCover);
+      const need = added.filter((t) => t.keyAuto || t.bpmAuto);
+      if (need.length) await analyzeTracks(need);
+    }
+
+    // Eventi del modale Conferma Voce
+    const voiceModalEl = document.getElementById('voiceConfirmModal');
+    voiceModalEl.addEventListener('click', (e) => {
+      if (!pendingImportTracks) return;
+      const bulkBtn = e.target.closest('[data-bulk-voice]');
+      if (bulkBtn) {
+        const v = bulkBtn.getAttribute('data-bulk-voice');
+        pendingImportTracks.forEach((t) => { t.voice = v; });
+        renderVoiceConfirmModal();
+        return;
+      }
+      const folderBtn = e.target.closest('[data-folder-voice]');
+      if (folderBtn) {
+        const v = folderBtn.getAttribute('data-folder-voice');
+        const f = folderBtn.getAttribute('data-folder');
+        pendingImportTracks.forEach((t) => { if (t.folderName === f) t.voice = v; });
+        renderVoiceConfirmModal();
+        return;
+      }
+      const itemBtn = e.target.closest('[data-item-voice]');
+      if (itemBtn) {
+        const idx = Number(itemBtn.getAttribute('data-item-idx'));
+        const v = itemBtn.getAttribute('data-item-voice');
+        if (pendingImportTracks[idx]) {
+          pendingImportTracks[idx].voice = v;
+          renderVoiceConfirmModal();
+        }
+      }
+    });
+    document.getElementById('btnVoiceModalCancel').onclick = cancelVoiceConfirmationModal;
+    document.getElementById('btnVoiceModalCancelX').onclick = cancelVoiceConfirmationModal;
+    document.getElementById('btnVoiceModalConfirm').onclick = confirmVoiceModalAndCommit;
+
+    async function handleFiles(fileList) {
+      const allFiles = Array.from(fileList || []);
+      const files = allFiles.filter((f) => f.type.startsWith('audio/') || /\.(mp3|wav|ogg|flac|m4a|aac|opus)$/i.test(f.name));
+      if (!files.length) return showStatusKey('statusNoAudio');
+
+      // Mappa eventuali immagini copertina (cover.jpg, folder.jpg, front.png...) presenti nella stessa cartella
+      const folderCovers = new Map();
+      allFiles.filter((f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(f.name)).forEach((img) => {
+        const rel = img.webkitRelativePath || img.name;
+        const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+        const priority = /^(cover|folder|front|album|artwork)\./i.test(img.name) ? 2 : 1;
+        const prev = folderCovers.get(dir);
+        if (!prev || priority > prev.priority) {
+          folderCovers.set(dir, { url: URL.createObjectURL(img), priority });
+        }
+      });
+
+      const savedTags = loadSavedTags(), added = [];
+      for (const file of files) {
+        const fn = E.parseMetadataFromFilename(file.name);
+        const { id3, coverUrl: embeddedCover } = await extractMetadataAndCoverFromFile(file);
+        const rel = file.webkitRelativePath || file.name;
+        const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+        const folderCover = folderCovers.get(dir) ? folderCovers.get(dir).url : null;
+        const folderHintVoice = inferVoiceFromFolderPath(dir);
+
+        const sv = savedTags[`${file.name}::${file.size}`], url = URL.createObjectURL(file);
+        const bpmVal = (sv && sv.bpm) || id3.bpm || fn.bpm || 104;
+        const track = {
+          id: 'loc_' + Math.random().toString(36).slice(2, 10),
+          title: (sv && sv.title) || id3.title || fn.title,
+          artist: (sv && sv.artist) || id3.artist || fn.artist,
+          voice: (sv && sv.voice) || fn.voice || folderHintVoice || 'M',
+          voiceAuto: !(sv && sv.voice) && !fn.voice && !folderHintVoice,
+          key: (sv && sv.key) || id3.key || fn.key || '8A',
+          keyAuto: !(sv && sv.key) && !id3.key && !fn.key,
+          bpm: bpmVal, bpmAuto: !(sv && sv.bpm) && !id3.bpm && !fn.bpm,
+          energy: (sv && sv.energy) || fn.energy || E.estimateEnergyFromBpm(bpmVal),
+          coverUrl: embeddedCover || folderCover || null,
+          folderName: dir || '',
+          duration: 180, isDemo: false, file, fileName: file.name, fileSize: file.size, objectUrl: url
+        };
+        const probe = new Audio(url);
+        probe.onloadedmetadata = () => { if (Number.isFinite(probe.duration) && probe.duration > 0) { track.duration = Math.round(probe.duration); renderLists(); } };
+        added.push(track);
+      }
+      openVoiceConfirmationModal(added);
+    }
+
+    async function analyzeTracks(list) {
+      const targets = list.filter((t) => !t.isDemo && (t.file || t.objectUrl));
+      if (!targets.length) return showStatusKey('statusNeedLocalAnalyze');
+      ensureAudioContext();
+      const wrap = document.getElementById('analysisProgressWrap'), bar = document.getElementById('analysisBar'), lbl = document.getElementById('analysisLabel'), pct = document.getElementById('analysisPercent');
+      wrap.classList.remove('hidden'); let done = 0;
+      for (const t of targets) {
+        lbl.textContent = L('analysisTrack', t.title);
+        try {
+          const rawBuf = t.file ? await t.file.arrayBuffer() : await (await fetch(t.objectUrl)).arrayBuffer();
+          if (!t.coverUrl) {
+            const c = E.extractCoverArt(rawBuf);
+            if (c) t.coverUrl = coverToObjectUrl(c);
+          }
+          const dec = await audioCtx.decodeAudioData(rawBuf.slice(0));
+          const res = E.analyzeAudioSamples(dec.getChannelData(0), dec.sampleRate);
+          if (t.keyAuto) { t.key = res.key; t.keyAuto = false; }
+          if (t.bpmAuto) { t.bpm = res.bpm; t.energy = res.energy; t.bpmAuto = false; }
+          if (t.voiceAuto) t.voice = res.estimatedVoice;
+          if (dec.duration > 0) t.duration = Math.round(dec.duration);
+          persistTrackTag(t);
+        } catch (_) {}
+        done++; const p = Math.round((done / targets.length) * 100); bar.style.width = `${p}%`; pct.textContent = `${p}%`;
+        await new Promise((r) => setTimeout(r, 15));
+      }
+      wrap.classList.add('hidden'); rebuildQueue(); showStatusKey('statusAnalyzed', done);
+    }
+
+    function voiceBadgeHtml(v, interactive, id) {
+      const lbl = E.voiceCompactLabel(v);
+      const col = v === 'M' ? 'var(--male)' : v === 'F' ? 'var(--female)' : v === 'D' ? 'var(--duet)' : 'var(--muted)';
+      return interactive
+        ? `<button class="badge badge-btn" data-action="cycle-voice" data-id="${id}"><span class="dot" style="background:${col}"></span>${lbl}</button>`
+        : `<span class="badge"><span class="dot" style="background:${col}"></span>${E.voiceShortLabel(v)}</span>`;
+    }
+
+    function transitionBadgesHtml(tr, isFirst) {
+      if (!tr || isFirst) return `<span class="badge" style="color:var(--muted);">${escapeHtml(L('seqStart'))}</span>`;
+      const out = [];
+      if (state.rules.alternateVoice) out.push(`<span class="badge ${tr.voiceOk ? 'ok-text' : 'warn-text'}">${tr.voiceOk ? '✓' : '⚠'} ${tr.voiceEval.label}</span>`);
+      if (state.rules.harmonicLogic) out.push(`<span class="badge ${tr.harmonyOk ? 'ok-text' : 'warn-text'}">${tr.harmonyOk ? '✓' : '⚠'} ${tr.harmonicEval.label}</span>`);
+      if (state.rules.bpmLogic) out.push(`<span class="badge ${tr.bpmOk ? 'ok-text' : 'warn-text'}">${tr.bpmOk ? '✓' : '⚠'} ${tr.bpmEval.label}</span>`);
+      if (state.rules.artistSeparation) out.push(`<span class="badge ${tr.artistOk ? 'ok-text' : 'warn-text'}">${tr.artistOk ? '✓' : '⚠'} ${tr.artistEval.label}</span>`);
+      return out.join('');
+    }
+
+    function syncMediaSession(track, coverSrc) {
+      if (!('mediaSession' in navigator) || !track) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title || 'ArmoniaPlay',
+          artist: track.artist || 'Lucio Ardito',
+          album: `${track.key} · ${track.bpm || 100} BPM`,
+          artwork: coverSrc ? [{ src: coverSrc, sizes: '512x512', type: coverSrc.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/jpeg' }] : []
+        });
+        navigator.mediaSession.playbackState = state.isPlaying ? 'playing' : 'paused';
+      } catch (_) {}
+    }
+
+    function renderPlayer() {
+      const it = state.currentItem, t = it ? it.track : null;
+      const previewTrack = t || (state.queue[0] ? state.queue[0].track : null);
+      const coverSrc = getTrackCoverUrl(previewTrack);
+      const coverEl = document.getElementById('nowCover');
+      if (coverEl && coverEl.src !== coverSrc) coverEl.src = coverSrc;
+
+      document.getElementById('nowTitle').textContent = t ? t.title : L('readyTitle');
+      document.getElementById('nowArtist').textContent = t ? t.artist : L('readyArtist');
+      document.getElementById('nowSourceBadge').textContent = t ? (t.isDemo ? L('sourceDemo') : L('sourceLocal')) : L('sourceIdle');
+      document.getElementById('nowVoiceBadge').innerHTML = t ? voiceBadgeHtml(t.voice, false) : '';
+      const ki = t ? E.getKeyInfo(t.key) : null;
+      document.getElementById('nowKeyBadge').textContent = t ? (ki ? `${ki.code} · ${E.getKeyLabel(ki)}` : t.key) : '—';
+      document.getElementById('nowBpmBadge').textContent = t ? `${t.bpm || 100} BPM · E${E.getTrackEnergy(t)}` : '—';
+      document.getElementById('sessionCounter').textContent = `${state.playedIds.size} / ${state.library.length}`;
+      document.getElementById('activeTransitionStrip').innerHTML = it
+        ? `<span class="badge ok-text">${escapeHtml(L('uniqueBadge', state.playedIds.size, state.library.length))}</span>${transitionBadgesHtml(it.transition, state.history.length <= 1)}`
+        : `<span class="badge" style="color:var(--muted);">${escapeHtml(L('idleHint'))}</span>`;
+      document.getElementById('btnPlayPause').textContent = state.isPlaying ? L('btnPause') : L('btnPlay');
+      const comp = document.getElementById('complianceBadge');
+      comp.textContent = L('compliancePct', state.stats.complianceRate);
+      comp.className = `badge mono ${state.stats.complianceRate === 100 ? 'ok-text' : 'warn-text'}`;
+      if (t) syncMediaSession(t, coverSrc);
+    }
+
+    function renderBpmChart() {
+      const svg = document.getElementById('bpmChart');
+      const items = [...(state.currentItem ? [{ track: state.currentItem.track, isNow: true }] : []), ...state.queue.map((q) => ({ track: q.track, isNow: false }))];
+      const artCounts = {};
+      state.library.forEach((t) => { const n = E.normalizeArtistName(t.artist); if (n) artCounts[n] = (artCounts[n] || 0) + 1; });
+      const multiArt = Object.values(artCounts).filter((c) => c > 1).length;
+      document.getElementById('artistSepSummary').textContent = state.rules.artistSeparation ? L('artistSepOn', state.rules.minArtistGap, multiArt) : L('artistSepOff');
+      if (!items.length) { document.getElementById('bpmRangeBadge').textContent = '—'; svg.innerHTML = ''; return; }
+      const bpms = items.map((x) => Number(x.track.bpm) || 100);
+      const minB = Math.min(...bpms), maxB = Math.max(...bpms);
+      document.getElementById('bpmRangeBadge').textContent = `${minB}–${maxB} BPM`;
+      const padMin = Math.max(50, minB - 8), span = Math.max(10, Math.min(220, maxB + 8) - padMin);
+      const W = 600, H = 84, px = 24, pt = 14, pb = 16;
+      const pts = items.map((it, i) => ({
+        x: items.length === 1 ? W / 2 : px + (i / (items.length - 1)) * (W - px * 2),
+        y: pt + (1 - ((Number(it.track.bpm) || 100) - padMin) / span) * (H - pt - pb),
+        bpm: Number(it.track.bpm) || 100, e: E.getTrackEnergy(it.track), track: it.track, isNow: it.isNow
+      }));
+      const poly = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      let html = `<polygon points="${pts[0].x.toFixed(1)},${H - pb} ${poly} ${pts[pts.length - 1].x.toFixed(1)},${H - pb}" fill="var(--primary)" fill-opacity="0.10"/>`;
+      html += `<polyline points="${poly}" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round"/>`;
+      pts.forEach((p, idx) => {
+        const bh = (p.e / 5) * 14;
+        html += `<rect x="${(p.x - 3).toFixed(1)}" y="${(H - pb - bh).toFixed(1)}" width="6" height="${bh.toFixed(1)}" rx="1.5" fill="var(--duet)" opacity="0.35"></rect>`;
+        html += `<g><title>#${idx + 1} ${escapeHtml(p.track.title)} · ${p.bpm} BPM · E${p.e}</title><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.isNow ? 5 : 3.5}" fill="${p.isNow ? 'var(--primary)' : 'var(--card)'}" stroke="var(--primary)" stroke-width="2"></circle>${(idx === 0 || idx === pts.length - 1 || p.isNow || items.length <= 14) ? `<text x="${p.x.toFixed(1)}" y="${Math.max(10, p.y - 7).toFixed(1)}" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--muted)">${p.bpm}</text>` : ''}</g>`;
+      });
+      svg.innerHTML = html;
+    }
+
+    function renderCamelotWheel() {
+      const svg = document.getElementById('camelotWheel'), cx = 160, cy = 160, rO = 148, rM = 104, rI = 56;
+      const activeKey = state.currentItem ? state.currentItem.track.key : (state.queue[0] ? state.queue[0].track.key : null);
+      const nextKey = state.queue[0] ? state.queue[0].track.key : null;
+      const compat = new Set(activeKey ? E.getCompatibleKeys(activeKey, state.rules.harmonyMode) : []);
+      const counts = {}; state.library.forEach((t) => { counts[t.key] = (counts[t.key] || 0) + 1; });
+      const polar = (r, deg) => [cx + r * Math.cos(((deg - 90) * Math.PI) / 180), cy + r * Math.sin(((deg - 90) * Math.PI) / 180)];
+      const arc = (r1, r2, a1, a2) => { const [x1,y1]=polar(r2,a1),[x2,y2]=polar(r2,a2),[x3,y3]=polar(r1,a2),[x4,y4]=polar(r1,a1); return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r2} ${r2} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x3.toFixed(1)} ${y3.toFixed(1)} A ${r1} ${r1} 0 0 0 ${x4.toFixed(1)} ${y4.toFixed(1)} Z`; };
+      let html = '';
+      for (let num = 1; num <= 12; num++) {
+        const ang = (num % 12) * 30;
+        ['B', 'A'].forEach((lt) => {
+          const code = `${num}${lt}`, ki = E.getKeyInfo(code), r1 = lt === 'B' ? rM + 2 : rI, r2 = lt === 'B' ? rO : rM - 1;
+          const isAct = code === activeKey, isCmp = !isAct && compat.has(code), cnt = counts[code] || 0;
+          const [tx, ty] = polar((r1 + r2) / 2, ang), [dx, dy] = polar(lt === 'B' ? rO - 8 : rI + 8, ang);
+          html += `<g class="camelot-slice" data-key="${code}"><title>${escapeHtml(L('camelotTooltip', code, E.getKeyLabel(ki), cnt))}</title><path d="${arc(r1, r2, ang - 14.3, ang + 14.3)}" fill="${isAct ? 'var(--primary)' : isCmp ? 'var(--success)' : 'var(--content)'}" fill-opacity="${isCmp ? '0.26' : '1'}" stroke="${state.keyFilter === code ? 'var(--fg)' : isAct ? 'var(--primary)' : isCmp ? 'var(--success)' : 'var(--border)'}" stroke-width="${state.keyFilter === code ? 2.2 : 1}"></path><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="${isAct || isCmp ? 700 : 500}" fill="${isAct ? 'var(--primary-fg)' : isCmp ? 'var(--fg)' : 'var(--muted)'}">${code}</text>${cnt > 0 ? `<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="2.5" fill="${isAct ? 'var(--primary-fg)' : 'var(--fg)'}"></circle>` : ''}</g>`;
+        });
+      }
+      const ai = activeKey ? E.getKeyInfo(activeKey) : null;
+      html += `<circle cx="${cx}" cy="${cy}" r="${rI - 4}" fill="var(--card)" stroke="var(--border)"></circle><text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="16" font-weight="700" fill="var(--fg)">${ai ? ai.code : '—'}</text><text x="${cx}" y="${cy + 9}" text-anchor="middle" font-size="10" fill="var(--muted)">${ai ? escapeHtml(E.getKeyLabel(ai)) : escapeHtml(L('camelotNone'))}</text>${nextKey && state.currentItem ? `<text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="9.5" fill="var(--muted)">${escapeHtml(L('camelotNext', nextKey))}</text>` : ''}`;
+      svg.innerHTML = html;
+      svg.querySelectorAll('.camelot-slice').forEach((el) => el.addEventListener('click', () => { const k = el.getAttribute('data-key'); state.keyFilter = state.keyFilter === k ? null : k; renderCamelotWheel(); renderLists(); }));
+      const clr = document.getElementById('btnClearKeyFilter');
+      if (state.keyFilter) { clr.classList.remove('hidden'); clr.textContent = L('keyFilterBtn', state.keyFilter); } else clr.classList.add('hidden');
+    }
+
+    function renderLists() {
+      const mCnt = state.library.filter((t) => t.voice === 'M').length, fCnt = state.library.filter((t) => t.voice === 'F').length;
+      document.getElementById('voiceBalanceSummary').textContent = `${mCnt} M · ${fCnt} F`;
+      document.getElementById('queueCountPill').textContent = state.queue.length;
+      document.getElementById('libCountPill').textContent = state.library.length;
+      document.getElementById('histCountPill').textContent = state.history.length;
+
+      const qn = document.getElementById('queueNotice'), s = state.stats, viols = [];
+      if (s.voiceViolations) viols.push(L('violVoice', s.voiceViolations));
+      if (s.harmonyViolations) viols.push(L('violHarmony', s.harmonyViolations));
+      if (s.bpmViolations) viols.push(L('violBpm', s.bpmViolations));
+      if (s.artistViolations) viols.push(L('violArtist', s.artistViolations));
+      if (s.stoppedEarly) { qn.textContent = L('strictStopNotice'); qn.classList.remove('hidden'); }
+      else if (viols.length) { qn.textContent = L('fallbackNotice', viols.join(', ')); qn.classList.remove('hidden'); }
+      else qn.classList.add('hidden');
+
+      const fq = state.keyFilter ? state.queue.filter((x) => x.track.key === state.keyFilter) : state.queue;
+      document.getElementById('queueList').innerHTML = fq.length ? fq.map((it, idx) => {
+        const t = it.track;
+        return `<div class="track-card ${idx === 0 && !state.keyFilter ? 'is-next' : ''}"><div class="track-main"><div class="track-info" data-action="play-queue" data-id="${t.id}"><span class="mono" style="width:18px;color:var(--muted);">${idx === 0 && !state.keyFilter ? '▶' : idx + 1}</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(t.title)}</div><div class="track-artist truncate">${escapeHtml(t.artist)} · ${formatTime(t.duration)}</div></div></div><div class="pills">${voiceBadgeHtml(t.voice, true, t.id)}<span class="badge mono">${t.key}</span><span class="badge mono" style="color:var(--muted);">${t.bpm || 100} E${E.getTrackEnergy(t)}</span></div></div><div class="pills" style="padding-left:28px;">${transitionBadgesHtml(it.transition, !state.currentItem && idx === 0)}</div></div>`;
+      }).join('') : `<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyQueue'))}</div>`;
+
+      const q = state.searchQuery.trim().toLowerCase();
+      const fl = state.library.filter((t) => (!state.keyFilter || t.key === state.keyFilter) && (state.voiceFilter === 'ALL' || t.voice === state.voiceFilter) && (!q || `${t.title} ${t.artist} ${t.key} ${t.bpm}`.toLowerCase().includes(q)));
+      const keyOpts = (sel) => E.CAMELOT_KEYS.map((k) => `<option value="${k.code}" ${k.code === sel ? 'selected' : ''}>${k.code} · ${E.getKeyLabel(k)}</option>`).join('');
+      const eOpts = (sel) => [1,2,3,4,5].map((e) => `<option value="${e}" ${e === sel ? 'selected' : ''}>E${e}</option>`).join('');
+      const playedTagHtml = `<span style="color:var(--muted);font-weight:400;">${escapeHtml(L('playedTag'))}</span>`;
+      const energyAttr = escapeHtml(L('energyTitle'));
+      const removeAttr = escapeHtml(L('removeTrackTitle'));
+      document.getElementById('libraryList').innerHTML = fl.length ? fl.map((t) => `<div class="track-card"><div class="track-main"><div class="track-info" data-action="play-lib" data-id="${t.id}"><span class="badge" style="padding:3px 7px;">▶</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(t.title)} ${state.playedIds.has(t.id) ? playedTagHtml : ''}</div><div class="track-artist truncate">${escapeHtml(t.artist)} · ${t.isDemo ? L('sourceDemo') : L('sourceLocal')}</div></div></div><div class="pills">${voiceBadgeHtml(t.voice, true, t.id)}<select data-action="change-key" data-id="${t.id}" class="mono">${keyOpts(t.key)}</select><input data-action="change-bpm" data-id="${t.id}" type="number" min="50" max="220" value="${t.bpm || 100}" class="mono" style="width:54px;text-align:center;" title="BPM"/><select data-action="change-energy" data-id="${t.id}" class="mono" title="${energyAttr}">${eOpts(E.getTrackEnergy(t))}</select><button class="btn" style="padding:4px 7px;" title="${removeAttr}" data-action="remove-track" data-id="${t.id}">✕</button></div></div></div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyLibrary'))}</div>`;
+
+      document.getElementById('historyList').innerHTML = state.history.length ? [...state.history].reverse().map((it, i) => `<div class="track-card"><div class="track-main"><div class="track-info"><span class="mono" style="color:var(--muted);">#${state.history.length - i}</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(it.track.title)}</div><div class="track-artist truncate">${escapeHtml(it.track.artist)}</div></div></div><div class="pills">${voiceBadgeHtml(it.track.voice, false)}<span class="badge mono">${it.track.key}</span><span class="badge mono" style="color:var(--muted);">${it.track.bpm || 100}</span></div></div></div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyHistory'))}</div>`;
+    }
+
+    function renderAll() { renderPlayer(); renderCamelotWheel(); renderBpmChart(); renderLists(); }
+
+    const canvas = document.getElementById('visualizer'), ctx = canvas.getContext('2d');
+    function drawViz() {
+      const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      const w = Math.max(100, Math.floor(r.width * dpr)), h = Math.max(40, Math.floor(r.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      const cs = getComputedStyle(document.documentElement), col = cs.getPropertyValue('--primary').trim() || '#2563eb', mut = cs.getPropertyValue('--border').trim() || '#888';
+      ctx.clearRect(0, 0, w, h);
+      const bars = 36, gap = 3 * dpr, bw = (w - gap * (bars + 1)) / bars;
+      let data = null; if (analyserNode && state.isPlaying) { data = new Uint8Array(analyserNode.frequencyBinCount); analyserNode.getByteFrequencyData(data); }
+      for (let i = 0; i < bars; i++) {
+        const amp = (data && state.isPlaying) ? Math.max(0.08, data[Math.floor((i / bars) * data.length * 0.72)] / 255) : 0.08;
+        const bh = Math.max(3 * dpr, amp * (h - 10 * dpr));
+        ctx.fillStyle = state.isPlaying ? col : mut; ctx.globalAlpha = state.isPlaying ? (0.4 + amp * 0.6) : 0.35;
+        ctx.fillRect(gap + i * (bw + gap), (h - bh) / 2, bw, bh);
+      }
+      ctx.globalAlpha = 1;
+      const pos = getPos(), sb = document.getElementById('seekBar');
+      if (pos.total > 0 && document.activeElement !== sb) sb.value = Math.round((pos.current / pos.total) * 1000);
+      document.getElementById('timeCurrent').textContent = formatTime(pos.current); document.getElementById('timeTotal').textContent = formatTime(pos.total);
+      requestAnimationFrame(drawViz);
+    }
+
+    function switchTab(t) { ['queue','library','history'].forEach((k) => { const c = k[0].toUpperCase() + k.slice(1); document.getElementById('panel' + c).classList.toggle('hidden', k !== t); document.getElementById('tab' + c).classList.toggle('active', k === t); }); }
+    document.getElementById('tabQueue').onclick = () => switchTab('queue');
+    document.getElementById('tabLibrary').onclick = () => switchTab('library');
+    document.getElementById('tabHistory').onclick = () => switchTab('history');
+    document.getElementById('btnPlayPause').onclick = () => {
+      if (!state.currentItem) { if (!state.queue.length) rebuildQueue(); if (state.queue.length) playItem(state.queue[0]); return; }
+      const t = state.currentItem.track;
+      if (state.isPlaying) {
+        if (t.isDemo || !t.objectUrl) synth.pause();
+        else { deckA.pause(); deckB.pause(); }
+        state.isPlaying = false;
+      } else {
+        if (t.isDemo || !t.objectUrl) synth.resume();
+        else {
+          attachDecks();
+          activeDeck.play();
+          if (activeFade && activeFade.outDeck && activeFade.outDeck !== activeDeck) activeFade.outDeck.play().catch(() => {});
+        }
+        state.isPlaying = true;
+      }
+      renderPlayer();
+    };
+    document.getElementById('btnNext').onclick = () => state.queue.length ? playItem(state.queue[0]) : handleTrackEnded();
+    document.getElementById('btnPrev').onclick = () => { if (state.history.length >= 2) { state.history.pop(); playItem(state.history.pop()); } };
+    document.getElementById('btnReshuffle').onclick = () => { rebuildQueue(); showStatusKey('statusReshuffled'); };
+    document.getElementById('btnLangIt').onclick = () => setAppLanguage('it');
+    document.getElementById('btnLangEn').onclick = () => setAppLanguage('en');
+    document.getElementById('volumeSlider').oninput = (e) => {
+      masterVolume = e.target.value / 100;
+      if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.015);
+      if (!decksRoutedToWebAudio) {
+        if (!activeFade) { activeDeck.volume = masterVolume; }
+      }
+    };
+    document.getElementById('seekBar').oninput = (e) => {
+      const p = getPos();
+      if (p.total > 0 && state.currentItem) {
+        const s = (e.target.value / 1000) * p.total;
+        if (state.currentItem.track.isDemo || !state.currentItem.track.objectUrl) synth.seek(s);
+        else {
+          activeDeck.currentTime = s;
+          if ((p.total - s) > (state.rules.crossfadeSec || 0) + 0.5) crossfadeTriggered = false;
+        }
+      }
+    };
+
+    document.getElementById('ruleNoRepeat').onchange = (e) => { state.rules.noRepeat = e.target.checked; rebuildQueue(); };
+    document.getElementById('ruleAlternateVoice').onchange = (e) => { state.rules.alternateVoice = e.target.checked; rebuildQueue(); };
+    document.getElementById('ruleHarmonic').onchange = (e) => { state.rules.harmonicLogic = e.target.checked; rebuildQueue(); };
+    document.getElementById('harmonyMode').onchange = (e) => { state.rules.harmonyMode = e.target.value; rebuildQueue(); };
+    document.getElementById('crossfadeSec').onchange = (e) => { state.rules.crossfadeSec = Number(e.target.value); };
+    document.getElementById('ruleBpm').onchange = (e) => { state.rules.bpmLogic = e.target.checked; rebuildQueue(); };
+    document.getElementById('energyFlow').onchange = (e) => { state.rules.energyFlow = e.target.value; rebuildQueue(); };
+    document.getElementById('maxBpmDelta').onchange = (e) => { state.rules.maxBpmDelta = Number(e.target.value); rebuildQueue(); };
+    document.getElementById('ruleArtistSep').onchange = (e) => { state.rules.artistSeparation = e.target.checked; rebuildQueue(); };
+    document.getElementById('minArtistGap').onchange = (e) => { state.rules.minArtistGap = Number(e.target.value); rebuildQueue(); };
+    document.getElementById('optStrictStop').onchange = (e) => { state.rules.strictStop = e.target.checked; rebuildQueue(); };
+    document.getElementById('optAutoCycle').onchange = (e) => { state.rules.autoCycle = e.target.checked; };
+    document.getElementById('btnClearKeyFilter').onclick = () => { state.keyFilter = null; renderCamelotWheel(); renderLists(); };
+
+    document.getElementById('btnAddFiles').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('btnAddFolder').onclick = () => document.getElementById('folderInput').click();
+    document.getElementById('fileInput').onchange = (e) => { handleFiles(e.target.files); e.target.value = ''; };
+    document.getElementById('folderInput').onchange = (e) => { handleFiles(e.target.files); e.target.value = ''; };
+    document.getElementById('btnAnalyzeAll').onclick = () => analyzeTracks(state.library);
+    document.getElementById('btnLoadDemo').onclick = () => { stopAllAudio(); state.library = createDemoTracks(); state.history = []; state.playedIds.clear(); state.currentItem = null; state.lastGenderVoice = null; state.isPlaying = false; rebuildQueue(); };
+    document.getElementById('btnClearLib').onclick = () => { stopAllAudio(); state.library = []; state.queue = []; state.history = []; state.playedIds.clear(); state.currentItem = null; state.isPlaying = false; renderAll(); };
+    document.getElementById('btnResetHistory').onclick = () => { state.history = []; state.playedIds.clear(); if (state.currentItem && state.rules.noRepeat) { state.playedIds.add(state.currentItem.track.id); state.history.push(state.currentItem); } rebuildQueue(); };
+    document.getElementById('btnDismissStatus').onclick = () => document.getElementById('statusBanner').classList.add('hidden');
+    document.getElementById('libSearch').oninput = (e) => { state.searchQuery = e.target.value; renderLists(); };
+    document.getElementById('libVoiceFilter').onchange = (e) => { state.voiceFilter = e.target.value; renderLists(); };
+
+    const dz = document.getElementById('dropZone');
+    ['dragenter','dragover'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('drag-active'); }));
+    ['dragleave','drop'].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag-active'); }));
+    dz.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+
+    document.getElementById('app').addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action]'); if (!el) return;
+      const act = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+      if (act === 'cycle-voice') { const ord = ['M','F','D','I'], t = state.library.find((x) => x.id === id); if (t) { t.voice = ord[(ord.indexOf(t.voice) + 1) % 4]; t.voiceAuto = false; persistTrackTag(t); rebuildQueue(); } }
+      else if (act === 'play-queue') { const it = state.queue.find((x) => x.track.id === id); if (it) playItem(it); }
+      else if (act === 'play-lib') { const t = state.library.find((x) => x.id === id); if (t) playItem({ track: t, transition: E.evaluateStep(state.currentItem ? state.currentItem.track : null, state.lastGenderVoice, t, state.rules, { recentArtists: getRecentArtists() }) }); }
+      else if (act === 'remove-track') { const i = state.library.findIndex((x) => x.id === id); if (i !== -1) { state.library.splice(i, 1); state.playedIds.delete(id); rebuildQueue(); } }
+    });
+    document.getElementById('app').addEventListener('change', (e) => {
+      const el = e.target.closest('[data-action]'); if (!el) return;
+      const act = el.getAttribute('data-action'), t = state.library.find((x) => x.id === el.getAttribute('data-id')); if (!t) return;
+      if (act === 'change-key') { t.key = el.value; t.keyAuto = false; persistTrackTag(t); rebuildQueue(); }
+      else if (act === 'change-bpm') { t.bpm = Math.max(50, Math.min(220, Math.round(Number(el.value) || 100))); t.bpmAuto = false; persistTrackTag(t); rebuildQueue(); }
+      else if (act === 'change-energy') { t.energy = Math.max(1, Math.min(5, Number(el.value) || 3)); persistTrackTag(t); rebuildQueue(); }
+    });
+
+    function downloadText(name, txt, mime) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: mime })); a.download = name; a.click(); }
+    document.getElementById('btnExportM3u').onclick = () => { const items = [...(state.currentItem ? [state.currentItem] : []), ...state.queue]; if (!items.length) return showStatusKey('statusNothingExport'); downloadText(L('m3uFilename'), E.exportM3U(items, currentLang), 'audio/x-mpegurl'); };
+    document.getElementById('btnExportJson').onclick = () => { const data = state.library.map((t) => ({ fileName: t.fileName, fileSize: t.fileSize || 0, title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: E.getTrackEnergy(t) })); downloadText('armoniaplay_tags.json', JSON.stringify(data, null, 2), 'application/json'); };
+    document.getElementById('btnImportJson').onclick = () => document.getElementById('importJsonInput').click();
+    document.getElementById('importJsonInput').onchange = async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      try {
+        JSON.parse(await f.text()).forEach((en) => {
+          const t = state.library.find((x) => x.fileName === en.fileName || (x.title === en.title && x.artist === en.artist));
+          if (t) { if (en.voice) t.voice = en.voice; if (en.key && E.normalizeKey(en.key)) t.key = E.normalizeKey(en.key); if (en.bpm) t.bpm = Number(en.bpm); if (en.energy) t.energy = Number(en.energy); persistTrackTag(t); }
+        });
+        rebuildQueue(); showStatusKey('statusTagsImported');
+      } catch (_) { showStatusKey('statusInvalidJson'); }
+      e.target.value = '';
+    };
+
+    async function autoloadFromDesktopLauncher() {
+      if (!/^https?:$/i.test(window.location.protocol)) return;
+      try {
+        const res = await fetch('/api/folder-tracks');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || !Array.isArray(data.tracks) || data.tracks.length === 0) return;
+        const savedTags = loadSavedTags();
+        stopAllAudio();
+        state.library = data.tracks.map((item, idx) => {
+          const fn = E.parseMetadataFromFilename(item.fileName);
+          const sv = savedTags[`${item.fileName}::${item.fileSize || 0}`];
+          const bpmVal = (sv && sv.bpm) || fn.bpm || 104;
+          return {
+            id: 'dsk_' + idx + '_' + Math.random().toString(36).slice(2, 7),
+            title: (sv && sv.title) || fn.title,
+            artist: (sv && sv.artist) || fn.artist,
+            voice: (sv && sv.voice) || fn.voice || (idx % 2 === 0 ? 'M' : 'F'),
+            voiceAuto: !(sv && sv.voice) && !fn.voice,
+            key: (sv && sv.key) || fn.key || '8A',
+            keyAuto: !(sv && sv.key) && !fn.key,
+            bpm: bpmVal,
+            bpmAuto: !(sv && sv.bpm) && !fn.bpm,
+            energy: (sv && sv.energy) || fn.energy || E.estimateEnergyFromBpm(bpmVal),
+            duration: 180,
+            isDemo: false,
+            fileName: item.relativePath || item.fileName,
+            fileSize: item.fileSize || 0,
+            objectUrl: item.url
+          };
+        });
+        state.history = []; state.playedIds.clear(); state.currentItem = null; state.lastGenderVoice = null; state.isPlaying = false;
+        rebuildQueue();
+        showStatusKey('statusDesktopLoaded', state.library.length, data.folder);
+      } catch (_) {}
+    }
+
+    // Copertina: click per ingrandire o personalizzare manualmente
+    const coverModal = document.getElementById('coverModal');
+    document.getElementById('coverWrap').onclick = () => {
+      const t = (state.currentItem && state.currentItem.track) || (state.queue[0] && state.queue[0].track);
+      if (!t) return;
+      document.getElementById('modalCoverImg').src = getTrackCoverUrl(t);
+      document.getElementById('modalCoverTitle').textContent = t.title;
+      document.getElementById('modalCoverArtist').textContent = `${t.artist} · ${t.key} · ${t.bpm || 100} BPM`;
+      coverModal.classList.remove('hidden');
+    };
+    document.getElementById('btnCloseCoverModal').onclick = () => coverModal.classList.add('hidden');
+    coverModal.onclick = (e) => { if (e.target === coverModal) coverModal.classList.add('hidden'); };
+    document.getElementById('btnChangeCover').onclick = () => document.getElementById('customCoverInput').click();
+    document.getElementById('customCoverInput').onchange = (e) => {
+      const imgFile = e.target.files[0];
+      const t = (state.currentItem && state.currentItem.track) || (state.queue[0] && state.queue[0].track);
+      if (imgFile && t) {
+        t.coverUrl = URL.createObjectURL(imgFile);
+        document.getElementById('modalCoverImg').src = t.coverUrl;
+        renderPlayer();
+      }
+      e.target.value = '';
+    };
+
+    // Media keys & Now Playing (macOS / browser)
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('play', () => { if (!state.isPlaying) document.getElementById('btnPlayPause').click(); });
+        navigator.mediaSession.setActionHandler('pause', () => { if (state.isPlaying) document.getElementById('btnPlayPause').click(); });
+        navigator.mediaSession.setActionHandler('nexttrack', () => document.getElementById('btnNext').click());
+        navigator.mediaSession.setActionHandler('previoustrack', () => document.getElementById('btnPrev').click());
+      } catch (_) {}
+    }
+
+    applyStaticI18n();
+    rebuildQueue();
+    requestAnimationFrame(drawViz);
+    autoloadFromDesktopLauncher();
+  })();
+  </script>
+</body>
+</html>
