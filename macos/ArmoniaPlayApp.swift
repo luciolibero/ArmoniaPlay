@@ -136,7 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         }
     }
 
-    // Apri link esterni (es. donazione PayPal con target="_blank") nel browser predefinito di macOS
+    // Apri link esterni (es. donazione Ko-fi con target="_blank") nel browser predefinito di macOS
     func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
