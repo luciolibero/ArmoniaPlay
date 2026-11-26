@@ -104,6 +104,8 @@
     .lang-btn { padding: 4px 8px; border-radius: 5px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; transition: background-color 0.15s, color 0.15s; }
     .lang-btn:hover { color: var(--fg); }
     .lang-btn.active { background: var(--primary); color: var(--primary-fg); }
+    .donate-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #0070ba; color: #ffffff; text-decoration: none; font-size: 11.5px; font-weight: 600; transition: opacity 0.15s, transform 0.12s; white-space: nowrap; }
+    .donate-badge:hover { opacity: 0.9; transform: translateY(-1px); }
   </style>
 </head>
 <body>
@@ -400,7 +402,13 @@
 
     <footer style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);">
       <span>ArmoniaPlay · <strong style="color:var(--fg);font-weight:500;">Lucio Ardito</strong></span>
-      <span data-i18n="footerTagline">Riproduzione locale 100% offline · 5 regole armoniche, vocali, BPM e artista</span>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+        <span data-i18n="footerTagline">Riproduzione locale 100% offline · 5 regole armoniche, vocali, BPM e artista</span>
+        <a class="donate-badge" href="https://www.paypal.com/donate/?business=lucioardito%40gmail.com&amp;no_recurring=0&amp;item_name=ArmoniaPlay+-+Lucio+Ardito&amp;currency_code=EUR" target="_blank" rel="noopener noreferrer" data-i18n-title="donatePaypalTitle" title="Supporta ArmoniaPlay con PayPal (lucioardito@gmail.com)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
+          <span data-i18n="donatePaypal">Dona con PayPal</span>
+        </a>
+      </div>
     </footer>
   </div>
 
@@ -1956,7 +1964,9 @@
         normBadgeTitle: (lDb, pDb, gDb) => `Loudness: ${lDb} dBFS · Picco: ${pDb} dBFS · Comp: ${gDb >= 0 ? '+' : ''}${gDb} dB`,
         normPendingTitle: 'Livellamento volume attivo (analisi in corso...)',
         normAutoLabel: 'Auto',
-        analysisTrackLoud: (title) => `Analisi tonalità, BPM & volume: ${title}`
+        analysisTrackLoud: (title) => `Analisi tonalità, BPM & volume: ${title}`,
+        donatePaypal: 'Dona con PayPal',
+        donatePaypalTitle: 'Supporta ArmoniaPlay con PayPal (lucioardito@gmail.com)'
       },
       en: {
         metaDesc: 'ArmoniaPlay by Lucio Ardito — 100% offline local music player with 5 smart rules: no-repeat, M/F voice alternation, Camelot harmony, BPM/energy curve, and artist separation.',
@@ -2106,7 +2116,9 @@
         normBadgeTitle: (lDb, pDb, gDb) => `Loudness: ${lDb} dBFS · Peak: ${pDb} dBFS · Gain: ${gDb >= 0 ? '+' : ''}${gDb} dB`,
         normPendingTitle: 'Auto volume leveling active (analyzing...)',
         normAutoLabel: 'Auto',
-        analysisTrackLoud: (title) => `Analyzing key, BPM & loudness: ${title}`
+        analysisTrackLoud: (title) => `Analyzing key, BPM & loudness: ${title}`,
+        donatePaypal: 'Donate with PayPal',
+        donatePaypalTitle: 'Support ArmoniaPlay via PayPal (lucioardito@gmail.com)'
       }
     };
 

@@ -1,11 +1,14 @@
 # ArmoniaPlay — Lucio Ardito 🎵
 
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
+
 **🇮🇹 Italiano** | **[🇬🇧 English below](#-english-documentation)**
 
 Player musicale locale (**zero installazioni, 100% offline, privacy totale**) ideato da **Lucio Ardito** per generare e riprodurre playlist intelligenti direttamente sul proprio computer applicando **cinque regole musicali combinate**, con interfaccia bilingue **Italiano / English (`IT / EN`)**.
 
 - 🌐 **Demo Live (GitHub Pages):** [Apri ArmoniaPlay nel browser](https://luciolibero.github.io/ArmoniaPlay/) *(dopo aver attivato GitHub Pages su branch `main`)*
 - 📦 **Download pronti all'uso:** [Sezione Releases](../../releases)
+- ☕ **Supporta il progetto:** [Dona con PayPal (`lucioardito@gmail.com`)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
 
 ---
 
@@ -149,6 +152,12 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
   ```
 - **Windows 10 / 11:** Download `ArmoniaPlay-Windows-Kit.zip` and double-click `Avvia-ArmoniaPlay-Silenzioso.vbs` (zero dependencies), or run `Compila-ArmoniaPlay-Windows.bat` to build a standalone `ArmoniaPlay.exe`.
 - **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.2.0_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
+
+## ☕ Supporta il progetto / Support ArmoniaPlay
+
+Se ArmoniaPlay ti è utile, puoi offrire un caffè o supportare lo sviluppo con una donazione tramite PayPal (`lucioardito@gmail.com`) / *If you find ArmoniaPlay useful, you can support its development via PayPal (`lucioardito@gmail.com`):*
+
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
 
 ## 📄 License
 

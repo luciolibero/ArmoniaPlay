@@ -136,7 +136,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         }
     }
 
-    // Supporto download (.m3u e .json) su macOS 11.3+
+    // Apri link esterni (es. donazione PayPal con target="_blank") nel browser predefinito di macOS
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        if let url = navigationAction.request.url,
+           let scheme = url.scheme?.lowercased(),
+           scheme == "http" || scheme == "https" {
+            NSWorkspace.shared.open(url)
+        }
+        return nil
+    }
+
+    // Supporto download (.m3u e .json) su macOS 11.3+ e apertura link esterni nel browser
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction,
@@ -147,6 +162,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
                 decisionHandler(.download)
                 return
             }
+        }
+        if let url = navigationAction.request.url,
+           let scheme = url.scheme?.lowercased(),
+           scheme == "http" || scheme == "https" {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
         }
         decisionHandler(.allow)
     }
