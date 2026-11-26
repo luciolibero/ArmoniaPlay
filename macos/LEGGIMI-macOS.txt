@@ -1,0 +1,62 @@
+ArmoniaPlay — Lucio Ardito
+Guida alla compilazione ed esecuzione su macOS
+==============================================
+
+Questo pacchetto include DUE modalità per usare ArmoniaPlay sul tuo Mac
+(compatibile sia con Apple Silicon M1/M2/M3/M4 sia con Intel):
+
+-------------------------------------------------------------------
+OPZIONE A (CONSIGLIATA) — COMPILARE L'APP NATIVA macOS (.app + .dmg)
+-------------------------------------------------------------------
+Crea una vera app nativa macOS (~300 KB) con finestra Cocoa/WebKit,
+menu nativo di macOS, selezione cartelle nativa e immagine .dmg:
+
+1. Estrai lo ZIP in una cartella sul tuo Mac (es. Scrivania o Download).
+2. Apri Terminale in questa cartella ed esegui:
+     chmod +x Compila-ArmoniaPlay-Nativo.command
+     ./Compila-ArmoniaPlay-Nativo.command
+   (oppure fai doppio clic su Compila-ArmoniaPlay-Nativo.command).
+
+   * Se macOS chiede gli strumenti sviluppatore (swiftc), esegui una volta:
+     xcode-select --install
+
+3. Al termine troverai nella stessa cartella:
+   - ArmoniaPlay.app  (trascinala nella cartella Applicazioni!)
+   - ArmoniaPlay-macOS.dmg  (file immagine pronto da condividere/installare)
+
+-------------------------------------------------------------------
+OPZIONE B — AVVIO IMMEDIATO SENZA COMPILAZIONE
+-------------------------------------------------------------------
+Se vuoi avviare subito ArmoniaPlay senza compilare nulla:
+
+- Apri "ArmoniaPlay-QuickLaunch.app" (tasto destro -> Apri al primo avvio)
+  oppure apri direttamente "ArmoniaPlay-standalone.html" con doppio clic.
+
+Nota sulla sicurezza macOS (Gatekeeper):
+Essendo scaricato da Google Drive, al primo avvio macOS potrebbe mostrare
+un avviso di sviluppatore non identificato. Per consentirlo:
+- Fai clic con il tasto destro sull'app -> "Apri" -> conferma "Apri"
+  oppure da Terminale:
+  xattr -dr com.apple.quarantine ArmoniaPlay-QuickLaunch.app
+
+Lingua / Language (IT / EN):
+Puoi cambiare lingua in qualsiasi momento cliccando il selettore IT / EN
+in alto a destra nell'interfaccia (la preferenza viene salvata in locale).
+
+===================================================================
+ENGLISH QUICK GUIDE — macOS
+===================================================================
+This kit includes two ways to run ArmoniaPlay on macOS (Apple Silicon & Intel):
+
+OPTION A (RECOMMENDED) — BUILD NATIVE macOS APP (.app + .dmg):
+  chmod +x Compila-ArmoniaPlay-Nativo.command
+  ./Compila-ArmoniaPlay-Nativo.command
+  (Requires Apple Command Line Tools: xcode-select --install)
+
+OPTION B — INSTANT LAUNCH (NO BUILD):
+  Open "ArmoniaPlay-QuickLaunch.app" (right-click -> Open on first run)
+  or double-click "ArmoniaPlay-standalone.html".
+
+Switch between Italian and English at any time using the IT / EN toggle
+in the top-right header.
+

@@ -1,0 +1,13 @@
+# macOS build artifacts
+macos/*.app/
+macos/*.dmg
+macos/.ArmoniaPlay.iconset/
+macos/.dmg_stage/
+
+# OS & Python
+.DS_Store
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
