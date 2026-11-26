@@ -1,5 +1,6 @@
 # ArmoniaPlay — Lucio Ardito 🎵
 
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Supporta%20%2F%20Donate-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/lucio54341)
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
 
 **🇮🇹 Italiano** | **[🇬🇧 English below](#-english-documentation)**
@@ -8,7 +9,7 @@ Player musicale locale (**zero installazioni, 100% offline, privacy totale**) id
 
 - 🌐 **Demo Live (GitHub Pages):** [Apri ArmoniaPlay nel browser](https://luciolibero.github.io/ArmoniaPlay/) *(dopo aver attivato GitHub Pages su branch `main`)*
 - 📦 **Download pronti all'uso:** [Sezione Releases](../../releases)
-- ☕ **Supporta il progetto:** [Dona con PayPal (`lucioardito@gmail.com`)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
+- ☕ **Supporta il progetto:** [Ko-fi (Carta / Apple Pay / Google Pay)](https://ko-fi.com/lucio54341) · [PayPal (`lucioardito@gmail.com`)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
 
 ---
 
@@ -155,8 +156,9 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
 
 ## ☕ Supporta il progetto / Support ArmoniaPlay
 
-Se ArmoniaPlay ti è utile, puoi offrire un caffè o supportare lo sviluppo con una donazione tramite PayPal (`lucioardito@gmail.com`) / *If you find ArmoniaPlay useful, you can support its development via PayPal (`lucioardito@gmail.com`):*
+Se ArmoniaPlay ti è utile, puoi offrire un caffè o supportare lo sviluppo tramite **Ko-fi** (Carta, Apple Pay, Google Pay) o **PayPal** (`lucioardito@gmail.com`) / *If you find ArmoniaPlay useful, you can support its development via **Ko-fi** (Card, Apple Pay, Google Pay) or **PayPal** (`lucioardito@gmail.com`):*
 
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Supporta%20%2F%20Donate-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/lucio54341)
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=lucioardito%40gmail.com&no_recurring=0&item_name=ArmoniaPlay+-+Lucio+Ardito&currency_code=EUR)
 
 ## 📄 License
