@@ -21,12 +21,13 @@ Player musicale locale (**zero installazioni, 100% offline, privacy totale**) id
    - **Onda Energetica**: sale fino al picco intorno al 65% della playlist e poi decresce dolcemente.
 5. **Distanza minima tra brani dello stesso artista**: impone almeno *N* brani di altri artisti tra due brani dello stesso artista (da `≥1` fino a `≥5`), normalizzando automaticamente anche crediti come `feat.`, `ft.`, `with`, `con`.
 
-### 🔍 Analisi Audio Locale, Copertine & Bilingue (`IT / EN`)
+### 🔍 Analisi Audio Locale, Livellamento Volume & Bilingue (`IT / EN`)
+- **Livellamento Volume Automatico (Auto-Loudness + Limiter)**: misura il volume integrato RMS (stile EBU R128 con gating su silenzi) e il picco di ogni brano, applicando automaticamente la compensazione in dB (`-16 dB Radio`, `-14 dB Standard`, `-12 dB Club`) insieme a un compressore/limiter broadcast anti-clipping per eliminare gli sbalzi improvvisi di volume tra un brano e l'altro.
 - **Tag ID3v2 e copertine integrate**: legge `TIT2`, `TPE1`, `TKEY`, `TBPM`, copertine `APIC` (MP3), FLAC, M4A/MP4 e immagini `cover.jpg`/`folder.jpg` nella cartella.
 - **Tag opzionali nel nome file**: es. `Artista - Titolo [F] [8A] [112bpm] [E4].mp3`.
-- **Analizzatore locale 100% offline**: rileva automaticamente tonalità (Goertzel + Krumhansl-Schmuckler), BPM ed energia RMS se assenti nei metadati.
+- **Analizzatore locale 100% offline**: rileva automaticamente tonalità (Goertzel + Krumhansl-Schmuckler), BPM, energia RMS e loudness se assenti nei metadati.
 - **Interfaccia bilingue `IT / EN`**: selettore istantaneo nell'intestazione (salvato in `localStorage`) che aggiorna UI, badge delle transizioni, notazione tonale (`La min` ↔ `A min`) ed esportazione `.m3u` senza interrompere la riproduzione.
-- **Persistenza & Export**: tag salvati in `localStorage`, backup/ripristino `.json` ed esportazione playlist `.m3u`.
+- **Persistenza & Export**: tag e misure loudness salvati in `localStorage`, backup/ripristino `.json` ed esportazione playlist `.m3u`.
 
 ---
 
@@ -62,7 +63,7 @@ Scarica **`ArmoniaPlay-Windows-Kit.zip`** dalle [Releases](../../releases) (oppu
 Scarica **`ArmoniaPlay-Linux-Kit.zip`** dalle [Releases](../../releases) (oppure usa la cartella [`linux/`](linux/)):
 - **Ubuntu / Debian / Mint (`.deb`, x86_64 & ARM64)**:
   ```bash
-  sudo apt install ./armoniaplay_2.1.0_all.deb
+  sudo apt install ./armoniaplay_2.2.0_all.deb
   armoniaplay
   ```
 - **Qualsiasi distro Linux (senza root, voce nel menu Applicazioni + icona)**:
@@ -113,7 +114,7 @@ ArmoniaPlay/
 
 # 🇬🇧 English Documentation
 
-A 100% offline, zero-installation local music player created by **Lucio Ardito** that builds and plays intelligent playlists on your computer using **five combined musical rules**, featuring an instant **Italian / English (`IT / EN`)** interface.
+A 100% offline, zero-installation local music player created by **Lucio Ardito** that builds and plays intelligent playlists on your computer using **five combined musical rules**, featuring **Auto Volume Leveling (Loudness + Limiter)** and an instant **Italian / English (`IT / EN`)** interface.
 
 - 🌐 **Live Demo (GitHub Pages):** [Open ArmoniaPlay in your browser](https://luciolibero.github.io/ArmoniaPlay/)
 - 📦 **Ready-to-use Packages:** [Releases](../../releases)
@@ -126,10 +127,11 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
 4. **BPM / Energy Rules**: controls maximum BPM jumps (`±8`, `±12`, `±18`, `±25 BPM`, including `½/2x` half/double-time compatibility) and energy progression curves (**Smooth**, **Ramp Up**, **Cool Down**, **Energy Wave** peaking around 65%).
 5. **Minimum Same-Artist Separation**: enforces at least *N* tracks by other artists between tracks by the same artist (`≥1` to `≥5`), automatically normalizing credits such as `feat.`, `ft.`, and `with`.
 
-### 🔍 Local Audio Analysis, Cover Art & Bilingual UI (`IT / EN`)
+### 🔍 Local Audio Analysis, Auto Volume Leveling & Bilingual UI (`IT / EN`)
+- **Auto Volume Leveling (Loudness + Broadcast Limiter)**: analyzes gated integrated RMS loudness (EBU R128-style) and peak level for every track, applying automatic dB gain compensation (`-16 dB Radio`, `-14 dB Standard`, `-12 dB Club`) plus a real-time broadcast compressor & anti-clipping safety limiter to prevent sudden volume jumps.
 - Reads **ID3v2** tags (`TIT2`, `TPE1`, `TKEY`, `TBPM`), embedded artwork (MP3/FLAC/M4A), and folder covers (`cover.jpg`, `folder.jpg`).
 - Supports optional filename tags: `Artist - Title [F] [8A] [112bpm] [E4].mp3`.
-- Built-in offline audio analyzer (Goertzel + Krumhansl-Schmuckler key detection & onset autocorrelation BPM/RMS energy).
+- Built-in offline audio analyzer (Goertzel + Krumhansl-Schmuckler key detection, onset autocorrelation BPM/RMS energy, and gated loudness).
 - Instant **`IT / EN`** toggle in the header (persisted in `localStorage`) switching all UI strings, transition badges, key notation (`A min` ↔ `La min`), and `.m3u` export live without interrupting playback.
 
 ## 📥 Quick Start (EN)
@@ -146,7 +148,7 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
   ./Compila-ArmoniaPlay-Nativo.command
   ```
 - **Windows 10 / 11:** Download `ArmoniaPlay-Windows-Kit.zip` and double-click `Avvia-ArmoniaPlay-Silenzioso.vbs` (zero dependencies), or run `Compila-ArmoniaPlay-Windows.bat` to build a standalone `ArmoniaPlay.exe`.
-- **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.1.0_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
+- **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.2.0_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
 
 ## 📄 License
 

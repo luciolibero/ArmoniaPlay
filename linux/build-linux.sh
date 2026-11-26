@@ -43,7 +43,7 @@ if ! command -v dpkg-deb >/dev/null 2>&1; then
   exit 1
 fi
 
-VERSION="2.1.0"
+VERSION="2.2.0"
 PKG_ROOT="${SCRIPT_DIR}/.deb_stage/armoniaplay_${VERSION}_all"
 OUT_DEB="${SCRIPT_DIR}/armoniaplay_${VERSION}_all.deb"
 

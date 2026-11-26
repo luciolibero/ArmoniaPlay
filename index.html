@@ -161,6 +161,7 @@
                   <span id="nowVoiceBadge"></span>
                   <span id="nowKeyBadge" class="badge mono">—</span>
                   <span id="nowBpmBadge" class="badge mono" style="color:var(--muted);">—</span>
+                  <span id="nowGainBadge" class="badge mono hidden" style="color:var(--muted);">—</span>
                 </div>
                 <div style="text-align:right;flex-shrink:0;">
                   <div style="font-size:10.5px;color:var(--muted);" data-i18n="session">Sessione</div>
@@ -278,6 +279,31 @@
                 <option value="4" data-i18n="gap_4">≥ 4 brani</option>
                 <option value="5" data-i18n="gap_5">≥ 5 brani</option>
               </select>
+            </div>
+          </div>
+
+          <div class="rule-box">
+            <label class="row-between" style="cursor:pointer;">
+              <div><strong data-i18n="normTitle">Livellamento Volume (Auto-Loudness)</strong><div class="rule-desc" data-i18n="normDesc">Uniforma il volume tra i brani (RMS + Limiter) evitando sbalzi improvvisi</div></div>
+              <input id="ruleVolumeNorm" type="checkbox" checked />
+            </label>
+            <div class="select-grid">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="normTargetLabel">Livello Target</div>
+                <select id="normTarget" style="width:100%;">
+                  <option value="-16" data-i18n="normTarget_16">Radio / Dinamico (-16 dB)</option>
+                  <option value="-14" selected data-i18n="normTarget_14">Standard (-14 dB)</option>
+                  <option value="-12" data-i18n="normTarget_12">Club / Forte (-12 dB)</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" data-i18n="normLimiterLabel">Protezione Picchi</div>
+                <select id="normLimiter" style="width:100%;">
+                  <option value="soft" selected data-i18n="normLim_soft">Broadcast + Limiter</option>
+                  <option value="safe" data-i18n="normLim_safe">Solo Anti-Clipping</option>
+                  <option value="off" data-i18n="normLim_off">Disattivato</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1640,6 +1666,89 @@
     };
   }
 
+  /**
+   * Analisi Loudness integrata (stile EBU R128 / ReplayGain):
+   * Calcola RMS con gating assoluto (-55 dBFS) e relativo (-10 dB sotto la media) su blocchi da 400ms
+   * lungo l'intero brano, piu il picco massimo (peakDb) per evitare clipping.
+   */
+  function analyzeLoudness(channels, sampleRate) {
+    const chList = Array.isArray(channels) ? channels.filter((c) => c && c.length > 0) : (channels && channels.length ? [channels] : []);
+    if (!chList.length || !sampleRate) return { loudnessDb: -14, peakDb: -1 };
+
+    const numCh = chList.length;
+    const totalLen = chList[0].length;
+    const blockSize = Math.max(1024, Math.round(sampleRate * 0.4));
+    const stride = sampleRate >= 40000 ? 2 : 1;
+    const blockPowers = [];
+    let globalPeak = 1e-6;
+
+    for (let start = 0; start < totalLen; start += blockSize) {
+      const end = Math.min(totalLen, start + blockSize);
+      let sumSq = 0;
+      let samplesCount = 0;
+      for (let i = start; i < end; i += stride) {
+        let chSum = 0;
+        for (let c = 0; c < numCh; c++) {
+          const v = chList[c][i];
+          const av = v < 0 ? -v : v;
+          if (av > globalPeak) globalPeak = av;
+          chSum += v * v;
+        }
+        sumSq += chSum / numCh;
+        samplesCount++;
+      }
+      if (samplesCount > 0) {
+        const ms = sumSq / samplesCount;
+        // Gate assoluto: ignora blocchi silenziosi sotto ~ -55 dBFS
+        if (ms >= 3.162e-6) blockPowers.push(ms);
+      }
+    }
+
+    const peakDb = Math.round(20 * Math.log10(Math.max(1e-6, globalPeak)) * 10) / 10;
+    if (!blockPowers.length) return { loudnessDb: -32, peakDb };
+
+    let ungatedMean = 0;
+    for (let i = 0; i < blockPowers.length; i++) ungatedMean += blockPowers[i];
+    ungatedMean /= blockPowers.length;
+
+    // Gate relativo (-10 dB sotto la media non-gated: ignora intro/outro molto bassi)
+    const relThresh = ungatedMean * 0.1;
+    let gatedSum = 0;
+    let gatedCount = 0;
+    for (let i = 0; i < blockPowers.length; i++) {
+      if (blockPowers[i] >= relThresh) {
+        gatedSum += blockPowers[i];
+        gatedCount++;
+      }
+    }
+    const finalPower = gatedCount > 0 ? gatedSum / gatedCount : ungatedMean;
+    const rawDb = 10 * Math.log10(Math.max(1e-6, finalPower));
+    const loudnessDb = Math.max(-45, Math.min(0, Math.round(rawDb * 10) / 10));
+    return { loudnessDb, peakDb };
+  }
+
+  /**
+   * Calcola la compensazione in dB per raggiungere targetDb evitando distorsioni/clipping.
+   */
+  function computeNormGainDb(loudnessDb, peakDb, targetDb = -14, hasLimiter = true) {
+    if (!Number.isFinite(Number(loudnessDb))) return 0;
+    const target = Number.isFinite(Number(targetDb)) ? Number(targetDb) : -14;
+    let gain = target - Number(loudnessDb);
+    gain = Math.max(-12, Math.min(10, gain));
+
+    if (Number.isFinite(Number(peakDb))) {
+      // Protezione picchi: lascia 0.5 dB di headroom (o consente max +2 dB dentro il limiter morbido)
+      const safeCeiling = -Number(peakDb) - 0.5 + (hasLimiter ? 2.0 : 0);
+      if (gain > safeCeiling) gain = Math.max(-12, safeCeiling);
+    }
+    return Math.round(gain * 10) / 10;
+  }
+
+  function dbToLinear(db) {
+    if (!Number.isFinite(Number(db))) return 1;
+    return Math.pow(10, Number(db) / 20);
+  }
+
   function exportM3U(queueItems, lang) {
     const lines = ['#EXTM3U', '#PLAYLIST:ArmoniaPlay — Lucio Ardito'];
     for (const item of queueItems) {
@@ -1683,6 +1792,9 @@
     extractCoverArt,
     generateFallbackCoverDataUrl,
     analyzeAudioSamples,
+    analyzeLoudness,
+    computeNormGainDb,
+    dbToLinear,
     exportM3U
   };
 });
@@ -1830,7 +1942,21 @@
         statusTagsImported: 'Tag importati.',
         statusInvalidJson: 'JSON non valido.',
         statusDesktopLoaded: (n, folder) => `Caricati ${n} brani dalla cartella locale: ${folder}`,
-        m3uFilename: 'playlist_armonica.m3u'
+        m3uFilename: 'playlist_armonica.m3u',
+        normTitle: 'Livellamento Volume (Auto-Loudness)',
+        normDesc: 'Uniforma il volume tra i brani (RMS + Limiter) evitando sbalzi improvvisi',
+        normTargetLabel: 'Livello Target',
+        normTarget_16: 'Radio / Dinamico (-16 dB)',
+        normTarget_14: 'Standard (-14 dB)',
+        normTarget_12: 'Club / Forte (-12 dB)',
+        normLimiterLabel: 'Protezione Picchi',
+        normLim_soft: 'Broadcast + Limiter',
+        normLim_safe: 'Solo Anti-Clipping',
+        normLim_off: 'Disattivato',
+        normBadgeTitle: (lDb, pDb, gDb) => `Loudness: ${lDb} dBFS · Picco: ${pDb} dBFS · Comp: ${gDb >= 0 ? '+' : ''}${gDb} dB`,
+        normPendingTitle: 'Livellamento volume attivo (analisi in corso...)',
+        normAutoLabel: 'Auto',
+        analysisTrackLoud: (title) => `Analisi tonalità, BPM & volume: ${title}`
       },
       en: {
         metaDesc: 'ArmoniaPlay by Lucio Ardito — 100% offline local music player with 5 smart rules: no-repeat, M/F voice alternation, Camelot harmony, BPM/energy curve, and artist separation.',
@@ -1966,7 +2092,21 @@
         statusTagsImported: 'Tags imported.',
         statusInvalidJson: 'Invalid JSON file.',
         statusDesktopLoaded: (n, folder) => `Loaded ${n} tracks from local folder: ${folder}`,
-        m3uFilename: 'harmonic_playlist.m3u'
+        m3uFilename: 'harmonic_playlist.m3u',
+        normTitle: 'Auto Volume Leveling (Loudness)',
+        normDesc: 'Evens out loudness across tracks (RMS + Limiter) to prevent sudden volume jumps',
+        normTargetLabel: 'Target Level',
+        normTarget_16: 'Radio / Dynamic (-16 dB)',
+        normTarget_14: 'Standard (-14 dB)',
+        normTarget_12: 'Club / Loud (-12 dB)',
+        normLimiterLabel: 'Peak Protection',
+        normLim_soft: 'Broadcast + Limiter',
+        normLim_safe: 'Anti-Clipping Only',
+        normLim_off: 'Off',
+        normBadgeTitle: (lDb, pDb, gDb) => `Loudness: ${lDb} dBFS · Peak: ${pDb} dBFS · Gain: ${gDb >= 0 ? '+' : ''}${gDb} dB`,
+        normPendingTitle: 'Auto volume leveling active (analyzing...)',
+        normAutoLabel: 'Auto',
+        analysisTrackLoud: (title) => `Analyzing key, BPM & loudness: ${title}`
       }
     };
 
@@ -2103,9 +2243,48 @@
       ];
     }
 
-    let audioCtx = null, masterGain = null, analyserNode = null;
-    let deckASource = null, deckBSource = null, deckAGain = null, deckBGain = null, synthGain = null;
+    let audioCtx = null, masterGain = null, levelerNode = null, limiterNode = null, analyserNode = null;
+    let deckASource = null, deckBSource = null, deckAGain = null, deckBGain = null, deckANormGain = null, deckBNormGain = null, synthGain = null;
     let decksRoutedToWebAudio = false, masterVolume = 0.8;
+
+    function updateAudioDynamics() {
+      if (!audioCtx || !levelerNode || !limiterNode) return;
+      const now = audioCtx.currentTime;
+      const active = Boolean(state.rules.volumeNorm);
+      const mode = active ? (state.rules.normLimiter || 'soft') : 'off';
+
+      if (mode === 'soft') {
+        levelerNode.threshold.setTargetAtTime(-18, now, 0.03);
+        levelerNode.knee.setTargetAtTime(24, now, 0.03);
+        levelerNode.ratio.setTargetAtTime(2.4, now, 0.03);
+        levelerNode.attack.setTargetAtTime(0.015, now, 0.03);
+        levelerNode.release.setTargetAtTime(0.25, now, 0.03);
+
+        limiterNode.threshold.setTargetAtTime(-1.2, now, 0.02);
+        limiterNode.knee.setTargetAtTime(1, now, 0.02);
+        limiterNode.ratio.setTargetAtTime(20, now, 0.02);
+        limiterNode.attack.setTargetAtTime(0.002, now, 0.02);
+        limiterNode.release.setTargetAtTime(0.08, now, 0.02);
+      } else if (mode === 'safe') {
+        levelerNode.threshold.setTargetAtTime(0, now, 0.03);
+        levelerNode.knee.setTargetAtTime(0, now, 0.03);
+        levelerNode.ratio.setTargetAtTime(1, now, 0.03);
+
+        limiterNode.threshold.setTargetAtTime(-1.5, now, 0.02);
+        limiterNode.knee.setTargetAtTime(1, now, 0.02);
+        limiterNode.ratio.setTargetAtTime(20, now, 0.02);
+        limiterNode.attack.setTargetAtTime(0.002, now, 0.02);
+        limiterNode.release.setTargetAtTime(0.08, now, 0.02);
+      } else {
+        levelerNode.threshold.setTargetAtTime(0, now, 0.03);
+        levelerNode.knee.setTargetAtTime(0, now, 0.03);
+        levelerNode.ratio.setTargetAtTime(1, now, 0.03);
+
+        limiterNode.threshold.setTargetAtTime(0, now, 0.02);
+        limiterNode.knee.setTargetAtTime(0, now, 0.02);
+        limiterNode.ratio.setTargetAtTime(1, now, 0.02);
+      }
+    }
 
     function ensureAudioContext() {
       if (!audioCtx) {
@@ -2115,12 +2294,17 @@
         masterGain.gain.value = masterVolume;
         synthGain = audioCtx.createGain();
         synthGain.gain.value = 1;
+        levelerNode = audioCtx.createDynamicsCompressor();
+        limiterNode = audioCtx.createDynamicsCompressor();
         analyserNode = audioCtx.createAnalyser();
         analyserNode.fftSize = 128;
         analyserNode.smoothingTimeConstant = 0.8;
         synthGain.connect(masterGain);
-        masterGain.connect(analyserNode);
+        masterGain.connect(levelerNode);
+        levelerNode.connect(limiterNode);
+        limiterNode.connect(analyserNode);
         analyserNode.connect(audioCtx.destination);
+        updateAudioDynamics();
       }
       if (audioCtx.state === 'suspended') audioCtx.resume();
     }
@@ -2168,7 +2352,7 @@
         const scale = isMin ? [0,2,3,5,7,8,10] : [0,2,4,5,7,9,11];
         const prog = isMin ? [0,5,2,6] : [0,4,5,3];
         const t0 = audioCtx.currentTime, bar = Math.floor(this.stepIdx / 8) % 4, beat = this.stepIdx % 8, deg = prog[bar];
-        const eb = 0.75 + E.getTrackEnergy(this.track) * 0.09;
+        const eb = state.rules.volumeNorm ? 1.0 : (0.75 + E.getTrackEnergy(this.track) * 0.09);
         if (beat === 0) {
           [deg, (deg + 2) % 7, (deg + 4) % 7].forEach((d, i) => this._tone(midiToFreq(48 + ki.pitchClass + scale[d] + (i ? 12 : 0)), t0, 1.8, 0.052 * eb, 'triangle', 1050 + E.getTrackEnergy(this.track) * 140));
           this._tone(midiToFreq(36 + ki.pitchClass + scale[deg]), t0, 1.5, 0.088 * eb, 'sine', 380);
@@ -2208,7 +2392,7 @@
       currentItem: null, lastGenderVoice: null, isPlaying: false, keyFilter: null,
       searchQuery: '', voiceFilter: 'ALL',
       stats: { complianceRate: 100, stoppedEarly: false, voiceViolations: 0, harmonyViolations: 0, bpmViolations: 0, artistViolations: 0 },
-      rules: { noRepeat: true, alternateVoice: true, harmonicLogic: true, harmonyMode: 'camelot_classic', bpmLogic: true, energyFlow: 'smooth', maxBpmDelta: 12, artistSeparation: true, minArtistGap: 3, strictStop: false, autoCycle: false, crossfadeSec: 2 }
+      rules: { noRepeat: true, alternateVoice: true, harmonicLogic: true, harmonyMode: 'camelot_classic', bpmLogic: true, energyFlow: 'smooth', maxBpmDelta: 12, artistSeparation: true, minArtistGap: 3, strictStop: false, autoCycle: false, crossfadeSec: 2, volumeNorm: true, normTarget: -14, normLimiter: 'soft' }
     };
 
     const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2218,7 +2402,11 @@
       if (!t || t.isDemo) return;
       try {
         const db = loadSavedTags();
-        db[`${t.fileName || t.title}::${t.fileSize || 0}`] = { title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: t.energy };
+        db[`${t.fileName || t.title}::${t.fileSize || 0}`] = {
+          title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: t.energy,
+          loudnessDb: Number.isFinite(t.loudnessDb) ? t.loudnessDb : null,
+          peakDb: Number.isFinite(t.peakDb) ? t.peakDb : null
+        };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
       } catch (_) {}
     };
@@ -2242,6 +2430,39 @@
       return deck === deckA ? deckAGain : deckBGain;
     }
 
+    function getDeckNormGainNode(deck) {
+      return deck === deckA ? deckANormGain : deckBNormGain;
+    }
+
+    function getTrackNormGainDb(track) {
+      if (!state.rules.volumeNorm || !track || track.isDemo) return 0;
+      if (!Number.isFinite(track.loudnessDb)) return 0;
+      return E.computeNormGainDb(track.loudnessDb, track.peakDb, state.rules.normTarget, state.rules.normLimiter !== 'off');
+    }
+
+    function applyDeckNormGain(deck, track, smooth = true) {
+      const gainDb = getTrackNormGainDb(track);
+      const lin = Math.max(0.15, Math.min(3.5, E.dbToLinear(gainDb)));
+      const nNode = getDeckNormGainNode(deck);
+      if (decksRoutedToWebAudio && nNode && audioCtx) {
+        const now = audioCtx.currentTime;
+        nNode.gain.cancelScheduledValues(now);
+        if (smooth) nNode.gain.setTargetAtTime(lin, now, 0.08);
+        else nNode.gain.setValueAtTime(lin, now);
+      } else if (deck && !decksRoutedToWebAudio) {
+        deck.volume = Math.max(0, Math.min(1, masterVolume * Math.min(1, lin)));
+      }
+    }
+
+    function refreshLiveNormGain(smooth = true) {
+      updateAudioDynamics();
+      if (state.currentItem && state.currentItem.track && !state.currentItem.track.isDemo) {
+        applyDeckNormGain(activeDeck, state.currentItem.track, smooth);
+      }
+      renderPlayer();
+      renderLists();
+    }
+
     function setDeckGain(deck, level, smooth = true) {
       const clamped = Math.max(0, Math.min(1, level));
       const gNode = getDeckGainNode(deck);
@@ -2252,7 +2473,9 @@
         if (smooth) gNode.gain.setTargetAtTime(clamped, now, 0.015);
         else gNode.gain.setValueAtTime(clamped, now);
       } else {
-        deck.volume = clamped * masterVolume;
+        const t = state.currentItem ? state.currentItem.track : null;
+        const lin = (deck === activeDeck && t) ? Math.min(1, E.dbToLinear(getTrackNormGainDb(t))) : 1;
+        deck.volume = Math.max(0, Math.min(1, clamped * masterVolume * lin));
       }
     }
 
@@ -2324,16 +2547,22 @@
       try {
         if (!deckASource) {
           deckASource = audioCtx.createMediaElementSource(deckA);
+          deckANormGain = audioCtx.createGain();
+          deckANormGain.gain.value = 1;
           deckAGain = audioCtx.createGain();
           deckAGain.gain.value = 1;
-          deckASource.connect(deckAGain);
+          deckASource.connect(deckANormGain);
+          deckANormGain.connect(deckAGain);
           deckAGain.connect(masterGain);
         }
         if (!deckBSource) {
           deckBSource = audioCtx.createMediaElementSource(deckB);
+          deckBNormGain = audioCtx.createGain();
+          deckBNormGain.gain.value = 1;
           deckBGain = audioCtx.createGain();
           deckBGain.gain.value = 1;
-          deckBSource.connect(deckBGain);
+          deckBSource.connect(deckBNormGain);
+          deckBNormGain.connect(deckBGain);
           deckBGain.connect(masterGain);
         }
         decksRoutedToWebAudio = true;
@@ -2342,6 +2571,29 @@
       } catch (_) {
         decksRoutedToWebAudio = false;
       }
+    }
+
+    async function ensureTrackLoudnessLive(track, deck) {
+      if (!track || track.isDemo || Number.isFinite(track.loudnessDb) || track._measuringLoudness) return;
+      if (!track.file && !track.objectUrl) return;
+      track._measuringLoudness = true;
+      try {
+        ensureAudioContext();
+        const rawBuf = track.file ? await track.file.arrayBuffer() : await (await fetch(track.objectUrl)).arrayBuffer();
+        const dec = await audioCtx.decodeAudioData(rawBuf.slice(0));
+        const channels = [];
+        for (let c = 0; c < Math.min(2, dec.numberOfChannels); c++) channels.push(dec.getChannelData(c));
+        const loud = E.analyzeLoudness(channels, dec.sampleRate);
+        track.loudnessDb = loud.loudnessDb;
+        track.peakDb = loud.peakDb;
+        persistTrackTag(track);
+        if (state.currentItem && state.currentItem.track.id === track.id) {
+          applyDeckNormGain(deck || activeDeck, track, true);
+          renderPlayer();
+        }
+        renderLists();
+      } catch (_) {}
+      track._measuringLoudness = false;
     }
 
     function playItem(item, opts = {}) {
@@ -2383,6 +2635,7 @@
           inDeck.pause();
           inDeck.src = t.objectUrl;
           inDeck.currentTime = 0;
+          applyDeckNormGain(inDeck, t, false);
           setDeckGain(inDeck, 0.001, false);
           inDeck.play().then(() => {
             state.isPlaying = true;
@@ -2399,6 +2652,7 @@
           crossfadeTriggered = false;
           inDeck.src = t.objectUrl;
           inDeck.currentTime = 0;
+          applyDeckNormGain(inDeck, t, false);
           setDeckGain(inDeck, 1, false);
           inDeck.play().then(() => {
             state.isPlaying = true;
@@ -2407,6 +2661,9 @@
             state.isPlaying = false;
             renderPlayer();
           });
+        }
+        if (state.rules.volumeNorm && !Number.isFinite(t.loudnessDb)) {
+          ensureTrackLoudnessLive(t, inDeck);
         }
       }
       state.isPlaying = true;
@@ -2587,7 +2844,7 @@
       rebuildQueue();
       const withCover = added.filter((t) => t.coverUrl).length;
       showStatusKey('statusLoadedConfirmed', added.length, withCover);
-      const need = added.filter((t) => t.keyAuto || t.bpmAuto);
+      const need = added.filter((t) => t.keyAuto || t.bpmAuto || !Number.isFinite(t.loudnessDb));
       if (need.length) await analyzeTracks(need);
     }
 
@@ -2662,6 +2919,8 @@
           keyAuto: !(sv && sv.key) && !id3.key && !fn.key,
           bpm: bpmVal, bpmAuto: !(sv && sv.bpm) && !id3.bpm && !fn.bpm,
           energy: (sv && sv.energy) || fn.energy || E.estimateEnergyFromBpm(bpmVal),
+          loudnessDb: (sv && Number.isFinite(sv.loudnessDb)) ? sv.loudnessDb : null,
+          peakDb: (sv && Number.isFinite(sv.peakDb)) ? sv.peakDb : null,
           coverUrl: embeddedCover || folderCover || null,
           folderName: dir || '',
           duration: 180, isDemo: false, file, fileName: file.name, fileSize: file.size, objectUrl: url
@@ -2680,7 +2939,7 @@
       const wrap = document.getElementById('analysisProgressWrap'), bar = document.getElementById('analysisBar'), lbl = document.getElementById('analysisLabel'), pct = document.getElementById('analysisPercent');
       wrap.classList.remove('hidden'); let done = 0;
       for (const t of targets) {
-        lbl.textContent = L('analysisTrack', t.title);
+        lbl.textContent = L('analysisTrackLoud', t.title);
         try {
           const rawBuf = t.file ? await t.file.arrayBuffer() : await (await fetch(t.objectUrl)).arrayBuffer();
           if (!t.coverUrl) {
@@ -2689,11 +2948,19 @@
           }
           const dec = await audioCtx.decodeAudioData(rawBuf.slice(0));
           const res = E.analyzeAudioSamples(dec.getChannelData(0), dec.sampleRate);
+          const channels = [];
+          for (let c = 0; c < Math.min(2, dec.numberOfChannels); c++) channels.push(dec.getChannelData(c));
+          const loud = E.analyzeLoudness(channels, dec.sampleRate);
+          t.loudnessDb = loud.loudnessDb;
+          t.peakDb = loud.peakDb;
           if (t.keyAuto) { t.key = res.key; t.keyAuto = false; }
           if (t.bpmAuto) { t.bpm = res.bpm; t.energy = res.energy; t.bpmAuto = false; }
           if (t.voiceAuto) t.voice = res.estimatedVoice;
           if (dec.duration > 0) t.duration = Math.round(dec.duration);
           persistTrackTag(t);
+          if (state.currentItem && state.currentItem.track.id === t.id) {
+            applyDeckNormGain(activeDeck, t, true);
+          }
         } catch (_) {}
         done++; const p = Math.round((done / targets.length) * 100); bar.style.width = `${p}%`; pct.textContent = `${p}%`;
         await new Promise((r) => setTimeout(r, 15));
@@ -2746,6 +3013,24 @@
       const ki = t ? E.getKeyInfo(t.key) : null;
       document.getElementById('nowKeyBadge').textContent = t ? (ki ? `${ki.code} · ${E.getKeyLabel(ki)}` : t.key) : '—';
       document.getElementById('nowBpmBadge').textContent = t ? `${t.bpm || 100} BPM · E${E.getTrackEnergy(t)}` : '—';
+
+      const gainEl = document.getElementById('nowGainBadge');
+      if (gainEl) {
+        if (t && !t.isDemo && state.rules.volumeNorm) {
+          gainEl.classList.remove('hidden');
+          if (Number.isFinite(t.loudnessDb)) {
+            const gDb = getTrackNormGainDb(t);
+            gainEl.textContent = `🔊 ${gDb >= 0 ? '+' : ''}${gDb.toFixed(1)} dB`;
+            gainEl.title = L('normBadgeTitle', t.loudnessDb, Number.isFinite(t.peakDb) ? t.peakDb : 0, gDb);
+          } else {
+            gainEl.textContent = `🔊 ${L('normAutoLabel')}`;
+            gainEl.title = L('normPendingTitle');
+          }
+        } else {
+          gainEl.classList.add('hidden');
+        }
+      }
+
       document.getElementById('sessionCounter').textContent = `${state.playedIds.size} / ${state.library.length}`;
       document.getElementById('activeTransitionStrip').innerHTML = it
         ? `<span class="badge ok-text">${escapeHtml(L('uniqueBadge', state.playedIds.size, state.library.length))}</span>${transitionBadgesHtml(it.transition, state.history.length <= 1)}`
@@ -2841,7 +3126,13 @@
       const playedTagHtml = `<span style="color:var(--muted);font-weight:400;">${escapeHtml(L('playedTag'))}</span>`;
       const energyAttr = escapeHtml(L('energyTitle'));
       const removeAttr = escapeHtml(L('removeTrackTitle'));
-      document.getElementById('libraryList').innerHTML = fl.length ? fl.map((t) => `<div class="track-card"><div class="track-main"><div class="track-info" data-action="play-lib" data-id="${t.id}"><span class="badge" style="padding:3px 7px;">▶</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(t.title)} ${state.playedIds.has(t.id) ? playedTagHtml : ''}</div><div class="track-artist truncate">${escapeHtml(t.artist)} · ${t.isDemo ? L('sourceDemo') : L('sourceLocal')}</div></div></div><div class="pills">${voiceBadgeHtml(t.voice, true, t.id)}<select data-action="change-key" data-id="${t.id}" class="mono">${keyOpts(t.key)}</select><input data-action="change-bpm" data-id="${t.id}" type="number" min="50" max="220" value="${t.bpm || 100}" class="mono" style="width:54px;text-align:center;" title="BPM"/><select data-action="change-energy" data-id="${t.id}" class="mono" title="${energyAttr}">${eOpts(E.getTrackEnergy(t))}</select><button class="btn" style="padding:4px 7px;" title="${removeAttr}" data-action="remove-track" data-id="${t.id}">✕</button></div></div></div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyLibrary'))}</div>`;
+      const gainPillHtml = (t) => {
+        if (t.isDemo || !Number.isFinite(t.loudnessDb)) return '';
+        const gDb = getTrackNormGainDb(t);
+        const title = escapeHtml(L('normBadgeTitle', t.loudnessDb, Number.isFinite(t.peakDb) ? t.peakDb : 0, gDb));
+        return `<span class="badge mono" style="color:var(--muted);" title="${title}">${gDb >= 0 ? '+' : ''}${gDb.toFixed(1)}dB</span>`;
+      };
+      document.getElementById('libraryList').innerHTML = fl.length ? fl.map((t) => `<div class="track-card"><div class="track-main"><div class="track-info" data-action="play-lib" data-id="${t.id}"><span class="badge" style="padding:3px 7px;">▶</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(t.title)} ${state.playedIds.has(t.id) ? playedTagHtml : ''}</div><div class="track-artist truncate">${escapeHtml(t.artist)} · ${t.isDemo ? L('sourceDemo') : L('sourceLocal')}</div></div></div><div class="pills">${voiceBadgeHtml(t.voice, true, t.id)}${gainPillHtml(t)}<select data-action="change-key" data-id="${t.id}" class="mono">${keyOpts(t.key)}</select><input data-action="change-bpm" data-id="${t.id}" type="number" min="50" max="220" value="${t.bpm || 100}" class="mono" style="width:54px;text-align:center;" title="BPM"/><select data-action="change-energy" data-id="${t.id}" class="mono" title="${energyAttr}">${eOpts(E.getTrackEnergy(t))}</select><button class="btn" style="padding:4px 7px;" title="${removeAttr}" data-action="remove-track" data-id="${t.id}">✕</button></div></div></div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyLibrary'))}</div>`;
 
       document.getElementById('historyList').innerHTML = state.history.length ? [...state.history].reverse().map((it, i) => `<div class="track-card"><div class="track-main"><div class="track-info"><span class="mono" style="color:var(--muted);">#${state.history.length - i}</span><div style="min-width:0;"><div class="track-title truncate">${escapeHtml(it.track.title)}</div><div class="track-artist truncate">${escapeHtml(it.track.artist)}</div></div></div><div class="pills">${voiceBadgeHtml(it.track.voice, false)}<span class="badge mono">${it.track.key}</span><span class="badge mono" style="color:var(--muted);">${it.track.bpm || 100}</span></div></div></div>`).join('') : `<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">${escapeHtml(L('emptyHistory'))}</div>`;
     }
@@ -2901,7 +3192,11 @@
       masterVolume = e.target.value / 100;
       if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.015);
       if (!decksRoutedToWebAudio) {
-        if (!activeFade) { activeDeck.volume = masterVolume; }
+        if (!activeFade) {
+          const t = state.currentItem ? state.currentItem.track : null;
+          const lin = t ? Math.min(1, E.dbToLinear(getTrackNormGainDb(t))) : 1;
+          activeDeck.volume = Math.max(0, Math.min(1, masterVolume * lin));
+        }
       }
     };
     document.getElementById('seekBar').oninput = (e) => {
@@ -2926,6 +3221,9 @@
     document.getElementById('maxBpmDelta').onchange = (e) => { state.rules.maxBpmDelta = Number(e.target.value); rebuildQueue(); };
     document.getElementById('ruleArtistSep').onchange = (e) => { state.rules.artistSeparation = e.target.checked; rebuildQueue(); };
     document.getElementById('minArtistGap').onchange = (e) => { state.rules.minArtistGap = Number(e.target.value); rebuildQueue(); };
+    document.getElementById('ruleVolumeNorm').onchange = (e) => { state.rules.volumeNorm = e.target.checked; refreshLiveNormGain(true); };
+    document.getElementById('normTarget').onchange = (e) => { state.rules.normTarget = Number(e.target.value); refreshLiveNormGain(true); };
+    document.getElementById('normLimiter').onchange = (e) => { state.rules.normLimiter = e.target.value; refreshLiveNormGain(true); };
     document.getElementById('optStrictStop').onchange = (e) => { state.rules.strictStop = e.target.checked; rebuildQueue(); };
     document.getElementById('optAutoCycle').onchange = (e) => { state.rules.autoCycle = e.target.checked; };
     document.getElementById('btnClearKeyFilter').onclick = () => { state.keyFilter = null; renderCamelotWheel(); renderLists(); };
@@ -2965,15 +3263,24 @@
 
     function downloadText(name, txt, mime) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: mime })); a.download = name; a.click(); }
     document.getElementById('btnExportM3u').onclick = () => { const items = [...(state.currentItem ? [state.currentItem] : []), ...state.queue]; if (!items.length) return showStatusKey('statusNothingExport'); downloadText(L('m3uFilename'), E.exportM3U(items, currentLang), 'audio/x-mpegurl'); };
-    document.getElementById('btnExportJson').onclick = () => { const data = state.library.map((t) => ({ fileName: t.fileName, fileSize: t.fileSize || 0, title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: E.getTrackEnergy(t) })); downloadText('armoniaplay_tags.json', JSON.stringify(data, null, 2), 'application/json'); };
+    document.getElementById('btnExportJson').onclick = () => { const data = state.library.map((t) => ({ fileName: t.fileName, fileSize: t.fileSize || 0, title: t.title, artist: t.artist, voice: t.voice, key: t.key, bpm: t.bpm, energy: E.getTrackEnergy(t), loudnessDb: Number.isFinite(t.loudnessDb) ? t.loudnessDb : null, peakDb: Number.isFinite(t.peakDb) ? t.peakDb : null })); downloadText('armoniaplay_tags.json', JSON.stringify(data, null, 2), 'application/json'); };
     document.getElementById('btnImportJson').onclick = () => document.getElementById('importJsonInput').click();
     document.getElementById('importJsonInput').onchange = async (e) => {
       const f = e.target.files[0]; if (!f) return;
       try {
         JSON.parse(await f.text()).forEach((en) => {
           const t = state.library.find((x) => x.fileName === en.fileName || (x.title === en.title && x.artist === en.artist));
-          if (t) { if (en.voice) t.voice = en.voice; if (en.key && E.normalizeKey(en.key)) t.key = E.normalizeKey(en.key); if (en.bpm) t.bpm = Number(en.bpm); if (en.energy) t.energy = Number(en.energy); persistTrackTag(t); }
+          if (t) {
+            if (en.voice) t.voice = en.voice;
+            if (en.key && E.normalizeKey(en.key)) t.key = E.normalizeKey(en.key);
+            if (en.bpm) t.bpm = Number(en.bpm);
+            if (en.energy) t.energy = Number(en.energy);
+            if (Number.isFinite(en.loudnessDb)) t.loudnessDb = Number(en.loudnessDb);
+            if (Number.isFinite(en.peakDb)) t.peakDb = Number(en.peakDb);
+            persistTrackTag(t);
+          }
         });
+        refreshLiveNormGain(true);
         rebuildQueue(); showStatusKey('statusTagsImported');
       } catch (_) { showStatusKey('statusInvalidJson'); }
       e.target.value = '';
@@ -3003,6 +3310,8 @@
             bpm: bpmVal,
             bpmAuto: !(sv && sv.bpm) && !fn.bpm,
             energy: (sv && sv.energy) || fn.energy || E.estimateEnergyFromBpm(bpmVal),
+            loudnessDb: (sv && Number.isFinite(sv.loudnessDb)) ? sv.loudnessDb : null,
+            peakDb: (sv && Number.isFinite(sv.peakDb)) ? sv.peakDb : null,
             duration: 180,
             isDemo: false,
             fileName: item.relativePath || item.fileName,

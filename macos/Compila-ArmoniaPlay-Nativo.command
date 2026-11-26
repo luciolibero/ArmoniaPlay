@@ -109,9 +109,9 @@ cat > "${CONTENTS_DIR}/Info.plist" <<EOF
   <key>CFBundleIdentifier</key>
   <string>it.lucioardito.armoniaplay</string>
   <key>CFBundleVersion</key>
-  <string>2.1.0</string>
+  <string>2.2.0</string>
   <key>CFBundleShortVersionString</key>
-  <string>2.1</string>
+  <string>2.2</string>
   <key>CFBundleExecutable</key>
   <string>ArmoniaPlay</string>
   <key>CFBundlePackageType</key>
