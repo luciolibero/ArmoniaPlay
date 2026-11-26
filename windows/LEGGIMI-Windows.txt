@@ -1,0 +1,52 @@
+ArmoniaPlay — Lucio Ardito
+Guida rapida per Windows (Windows 10 / 11)
+==========================================
+
+Questo pacchetto include DUE modalita per usare ArmoniaPlay su Windows:
+
+-------------------------------------------------------------------
+OPZIONE A (CONSIGLIATA) — AVVIO IMMEDIATO (ZERO INSTALLAZIONI)
+-------------------------------------------------------------------
+Non richiede Python ne alcuna installazione:
+
+1. Estrai tutto lo ZIP in una cartella sul tuo PC (es. Desktop o Documenti).
+2. Fai doppio clic su:
+   - "Avvia-ArmoniaPlay-Silenzioso.vbs" (avvio pulito senza finestra nera)
+   oppure
+   - "Avvia-ArmoniaPlay.bat"
+
+ArmoniaPlay si aprira automaticamente in una finestra app dedicata
+usando Microsoft Edge (gia presente su Windows 10/11), Chrome o Brave.
+
+Suggerimento: puoi cambiare lingua (Italiano / English) in qualsiasi
+momento con il selettore IT / EN in alto a destra.
+
+-------------------------------------------------------------------
+OPZIONE B — CREARE L'ESEGUIBILE SINGOLO ArmoniaPlay.exe
+-------------------------------------------------------------------
+Se desideri un singolo file .exe con icona personalizzata da mettere
+sul Desktop o nel menu Start (richiede Python 3):
+
+1. Fai doppio clic su "Compila-ArmoniaPlay-Windows.bat".
+2. Lo script installera PyInstaller (se assente) e generera:
+   ArmoniaPlay.exe
+
+Puoi anche avviare ArmoniaPlay da terminale con una cartella musicale:
+  python armoniaplay_desktop.py "C:\Percorso\Alla\Tua\Musica"
+  python armoniaplay_desktop.py --lang en "C:\Path\To\Your\Music"
+
+===================================================================
+ENGLISH QUICK GUIDE — Windows 10 / 11
+===================================================================
+
+OPTION A (RECOMMENDED) — INSTANT LAUNCH (ZERO DEPENDENCIES):
+  1. Extract the ZIP folder to your PC.
+  2. Double-click "Avvia-ArmoniaPlay-Silenzioso.vbs" (or "Avvia-ArmoniaPlay.bat").
+  ArmoniaPlay opens in a dedicated app window using Edge, Chrome, or Brave.
+
+OPTION B — BUILD STANDALONE ArmoniaPlay.exe (requires Python 3):
+  Double-click "Compila-ArmoniaPlay-Windows.bat" to compile ArmoniaPlay.exe
+  with the custom ArmoniaPlay icon.
+
+Switch between Italian and English at any time using the IT / EN toggle
+in the top-right header.

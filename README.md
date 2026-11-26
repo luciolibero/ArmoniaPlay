@@ -53,6 +53,30 @@ chmod +x Compila-ArmoniaPlay-Nativo.command
 ```
 Genera automaticamente **`ArmoniaPlay.app`** (binario Universale Swift/Cocoa/WKWebView con menu nativi IT/EN) e l'immagine installabile **`ArmoniaPlay-macOS-universal.dmg`**.
 
+### 4. Versione Windows (Windows 10 / 11)
+Scarica **`ArmoniaPlay-Windows-Kit.zip`** dalle [Releases](../../releases) (oppure usa la cartella [`windows/`](windows/)):
+- **Avvio immediato senza installazioni (zero Python)**: fai doppio clic su **`Avvia-ArmoniaPlay-Silenzioso.vbs`** (senza finestra nera) o **`Avvia-ArmoniaPlay.bat`** per aprire ArmoniaPlay in finestra app dedicata con Edge, Chrome o Brave.
+- **Compilare un singolo `.exe` con icona**: fai doppio clic su **`Compila-ArmoniaPlay-Windows.bat`** (richiede Python 3) per generare **`ArmoniaPlay.exe`** con icona `armoniaplay.ico`.
+
+### 5. Versione Linux (Ubuntu, Debian, Mint, Fedora, Arch, Manjaro...)
+Scarica **`ArmoniaPlay-Linux-Kit.zip`** dalle [Releases](../../releases) (oppure usa la cartella [`linux/`](linux/)):
+- **Ubuntu / Debian / Mint (`.deb`, x86_64 & ARM64)**:
+  ```bash
+  sudo apt install ./armoniaplay_2.1.0_all.deb
+  armoniaplay
+  ```
+- **Qualsiasi distro Linux (senza root, voce nel menu Applicazioni + icona)**:
+  ```bash
+  cd linux
+  chmod +x armoniaplay.sh install-desktop.sh uninstall-desktop.sh
+  ./install-desktop.sh
+  ```
+- **Avvio portatile diretto** o build binario PyInstaller (`./build-linux.sh --binary`):
+  ```bash
+  ./armoniaplay.sh
+  ./armoniaplay.sh /percorso/alla/tua/musica
+  ```
+
 ---
 
 ## 📂 Struttura del Repository
@@ -63,11 +87,25 @@ ArmoniaPlay/
 ├── ArmoniaPlay-standalone.html   # Singolo file HTML5 100% offline (IT / EN)
 ├── armoniaplay_desktop.py        # Launcher desktop Python 3 (zero dipendenze)
 ├── ArmoniaPlay-macOS-Kit.zip     # Pacchetto macOS pronto (QuickLaunch + sorgenti nativi)
+├── ArmoniaPlay-Windows-Kit.zip   # Pacchetto Windows pronto (.vbs/.bat + build .exe + .ico)
+├── ArmoniaPlay-Linux-Kit.zip     # Pacchetto Linux pronto (.deb + installer desktop + launcher)
 ├── macos/
 │   ├── ArmoniaPlayApp.swift                # App nativa macOS Cocoa + WKWebView (IT / EN)
 │   ├── Compila-ArmoniaPlay-Nativo.command  # Script build Universal (.app + .dmg)
 │   ├── icon_512.png                        # Icona ad alta risoluzione
 │   └── LEGGIMI-macOS.txt                   # Guida rapida macOS (IT / EN)
+├── windows/
+│   ├── Avvia-ArmoniaPlay-Silenzioso.vbs    # Avvio silenzioso finestra app (zero Python)
+│   ├── Avvia-ArmoniaPlay.bat               # Launcher Windows + drag&drop cartelle
+│   ├── Compila-ArmoniaPlay-Windows.bat     # Script build ArmoniaPlay.exe (PyInstaller)
+│   ├── armoniaplay.ico                     # Icona Windows multi-risoluzione (16–256px)
+│   └── LEGGIMI-Windows.txt                 # Guida rapida Windows (IT / EN)
+├── linux/
+│   ├── armoniaplay.sh                      # Launcher Linux (finestra app / cartella locale)
+│   ├── install-desktop.sh                  # Installazione menu Applicazioni + icona (no root)
+│   ├── uninstall-desktop.sh                # Rimozione pulita installazione utente
+│   ├── build-linux.sh                      # Build pacchetto .deb o binario PyInstaller
+│   └── LEGGIMI-Linux.txt                   # Guida rapida Linux (IT / EN)
 └── README.md
 ```
 
@@ -107,6 +145,8 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
   chmod +x Compila-ArmoniaPlay-Nativo.command
   ./Compila-ArmoniaPlay-Nativo.command
   ```
+- **Windows 10 / 11:** Download `ArmoniaPlay-Windows-Kit.zip` and double-click `Avvia-ArmoniaPlay-Silenzioso.vbs` (zero dependencies), or run `Compila-ArmoniaPlay-Windows.bat` to build a standalone `ArmoniaPlay.exe`.
+- **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.1.0_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
 
 ## 📄 License
 

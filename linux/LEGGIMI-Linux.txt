@@ -1,0 +1,60 @@
+ArmoniaPlay — Lucio Ardito
+Guida rapida per Linux (Ubuntu, Debian, Mint, Fedora, Arch, Manjaro...)
+=======================================================================
+
+Questo pacchetto include TRE modalita per usare ArmoniaPlay su Linux:
+
+-------------------------------------------------------------------
+OPZIONE A (Ubuntu / Debian / Mint / Pop!_OS) — PACCHETTO .deb
+-------------------------------------------------------------------
+Installazione di sistema con voce nel menu Applicazioni, icona e
+comando terminale "armoniaplay" (compatibile x86_64 e ARM64):
+
+  sudo apt install ./armoniaplay_2.1.0_all.deb
+
+Avvio dal menu Applicazioni ("ArmoniaPlay") oppure da terminale:
+  armoniaplay
+  armoniaplay /percorso/alla/tua/musica
+  armoniaplay --lang en /path/to/your/music
+
+Rimozione:
+  sudo apt remove armoniaplay
+
+-------------------------------------------------------------------
+OPZIONE B (Tutte le distro Linux, senza root) — INSTALLA NEL MENU
+-------------------------------------------------------------------
+Funziona su Fedora, Arch, Manjaro, openSUSE, Ubuntu, ecc.:
+
+  chmod +x armoniaplay.sh install-desktop.sh uninstall-desktop.sh
+  ./install-desktop.sh
+
+Per disinstallare:
+  ./uninstall-desktop.sh
+
+-------------------------------------------------------------------
+OPZIONE C — AVVIO IMMEDIATO PORTATILE (ZERO INSTALLAZIONI)
+-------------------------------------------------------------------
+  chmod +x armoniaplay.sh
+  ./armoniaplay.sh
+  ./armoniaplay.sh /percorso/alla/tua/musica
+
+(Per compilare un binario standalone PyInstaller: ./build-linux.sh --binary)
+
+===================================================================
+ENGLISH QUICK GUIDE — Linux
+===================================================================
+
+OPTION A (Ubuntu / Debian / Mint — .deb package):
+  sudo apt install ./armoniaplay_2.1.0_all.deb
+  armoniaplay --lang en /path/to/your/music
+
+OPTION B (Any Linux distro, no root required — desktop menu entry):
+  chmod +x armoniaplay.sh install-desktop.sh uninstall-desktop.sh
+  ./install-desktop.sh
+
+OPTION C (Portable instant launch):
+  chmod +x armoniaplay.sh
+  ./armoniaplay.sh
+
+Switch between Italian and English at any time using the IT / EN toggle
+in the top-right header.

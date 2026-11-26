@@ -4,6 +4,18 @@ macos/*.dmg
 macos/.ArmoniaPlay.iconset/
 macos/.dmg_stage/
 
+# Windows build artifacts
+windows/*.exe
+windows/build/
+windows/dist/
+
+# Linux build artifacts
+linux/ArmoniaPlay
+linux/*.deb
+linux/.deb_stage/
+linux/build/
+linux/dist/
+
 # OS & Python
 .DS_Store
 __pycache__/
