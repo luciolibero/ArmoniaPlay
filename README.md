@@ -6,8 +6,8 @@
 
 Player musicale locale (**zero installazioni, 100% offline, privacy totale**) ideato da **Lucio Ardito** per generare e riprodurre playlist intelligenti direttamente sul proprio computer applicando **cinque regole musicali combinate**, con interfaccia bilingue **Italiano / English (`IT / EN`)**.
 
-- 🌐 **Demo Live (GitHub Pages):** [Apri ArmoniaPlay nel browser](https://luciolibero.github.io/ArmoniaPlay/) *(dopo aver attivato GitHub Pages su branch `main`)*
-- 📦 **Download pronti all'uso:** [Sezione Releases](../../releases)
+- 🌐 **Demo Live (GitHub Pages):** [Apri ArmoniaPlay nel browser](https://luciolibero.github.io/ArmoniaPlay/)
+- 📦 **Download pronti all'uso:** [Sezione Releases](https://github.com/luciolibero/ArmoniaPlay/releases)
 - ☕ **Supporta il progetto:** [Offri un caffè su Ko-fi](https://ko-fi.com/lucio54341)
 
 ---
@@ -37,7 +37,7 @@ Player musicale locale (**zero installazioni, 100% offline, privacy totale**) id
 ## 📥 Download & Utilizzo
 
 ### 1. HTML Standalone (Windows, macOS, Linux — zero installazioni)
-Scarica **`ArmoniaPlay-standalone.html`** dalle [Releases](../../releases) (o dal repository) e aprilo con doppio clic in Chrome, Safari, Edge o Firefox. Funziona 100% offline anche da chiavetta USB.
+Scarica **`ArmoniaPlay-standalone.html`** dalle [Releases](https://github.com/luciolibero/ArmoniaPlay/releases) (o dal repository) e aprilo con doppio clic in Chrome, Safari, Edge o Firefox. Funziona 100% offline anche da chiavetta USB.
 
 ### 2. App Desktop Python (solo standard library)
 Apre ArmoniaPlay in una finestra app dedicata e carica direttamente una cartella musicale locale:
@@ -48,7 +48,7 @@ python3 armoniaplay_desktop.py --lang en /path/to/your/music
 ```
 
 ### 3. App Nativa macOS (Apple Silicon M1–M4 + Intel)
-Scarica **`ArmoniaPlay-macOS-Kit.zip`** dalle [Releases](../../releases), oppure compila direttamente dalla cartella [`macos/`](macos/) di questo repository (richiede solo i Command Line Tools: `xcode-select --install`):
+Scarica **`ArmoniaPlay-macOS-Kit.zip`** dalle [Releases](https://github.com/luciolibero/ArmoniaPlay/releases), oppure compila direttamente dalla cartella [`macos/`](macos/) di questo repository (richiede solo i Command Line Tools: `xcode-select --install`):
 ```zsh
 git clone https://github.com/luciolibero/ArmoniaPlay.git
 cd ArmoniaPlay/macos
@@ -58,15 +58,15 @@ chmod +x Compila-ArmoniaPlay-Nativo.command
 Genera automaticamente **`ArmoniaPlay.app`** (binario Universale Swift/Cocoa/WKWebView con menu nativi IT/EN) e l'immagine installabile **`ArmoniaPlay-macOS-universal.dmg`**.
 
 ### 4. Versione Windows (Windows 10 / 11)
-Scarica **`ArmoniaPlay-Windows-Kit.zip`** dalle [Releases](../../releases) (oppure usa la cartella [`windows/`](windows/)):
+Scarica **`ArmoniaPlay-Windows-Kit.zip`** dalle [Releases](https://github.com/luciolibero/ArmoniaPlay/releases) (oppure usa la cartella [`windows/`](windows/)):
 - **Avvio immediato senza installazioni (zero Python)**: fai doppio clic su **`Avvia-ArmoniaPlay-Silenzioso.vbs`** (senza finestra nera) o **`Avvia-ArmoniaPlay.bat`** per aprire ArmoniaPlay in finestra app dedicata con Edge, Chrome o Brave.
 - **Compilare un singolo `.exe` con icona**: fai doppio clic su **`Compila-ArmoniaPlay-Windows.bat`** (richiede Python 3) per generare **`ArmoniaPlay.exe`** con icona `armoniaplay.ico`.
 
 ### 5. Versione Linux (Ubuntu, Debian, Mint, Fedora, Arch, Manjaro...)
-Scarica **`ArmoniaPlay-Linux-Kit.zip`** dalle [Releases](../../releases) (oppure usa la cartella [`linux/`](linux/)):
+Scarica **`ArmoniaPlay-Linux-Kit.zip`** dalle [Releases](https://github.com/luciolibero/ArmoniaPlay/releases) (oppure usa la cartella [`linux/`](linux/)):
 - **Ubuntu / Debian / Mint (`.deb`, x86_64 & ARM64)**:
   ```bash
-  sudo apt install ./armoniaplay_2.2.0_all.deb
+  sudo apt install ./armoniaplay_2.2.1_all.deb
   armoniaplay
   ```
 - **Qualsiasi distro Linux (senza root, voce nel menu Applicazioni + icona)**:
@@ -120,7 +120,7 @@ ArmoniaPlay/
 A 100% offline, zero-installation local music player created by **Lucio Ardito** that builds and plays intelligent playlists on your computer using **five combined musical rules**, featuring **Auto Volume Leveling (Loudness + Limiter)** and an instant **Italian / English (`IT / EN`)** interface.
 
 - 🌐 **Live Demo (GitHub Pages):** [Open ArmoniaPlay in your browser](https://luciolibero.github.io/ArmoniaPlay/)
-- 📦 **Ready-to-use Packages:** [Releases](../../releases)
+- 📦 **Ready-to-use Packages:** [Releases](https://github.com/luciolibero/ArmoniaPlay/releases)
 
 ## ✨ The 5 Combined Rules (EN)
 
@@ -139,19 +139,19 @@ A 100% offline, zero-installation local music player created by **Lucio Ardito**
 
 ## 📥 Quick Start (EN)
 
-- **Standalone HTML:** Download `ArmoniaPlay-standalone.html` from [Releases](../../releases) and double-click to run offline in any modern browser.
+- **Standalone HTML:** Download `ArmoniaPlay-standalone.html` from [Releases](https://github.com/luciolibero/ArmoniaPlay/releases) and double-click to run offline in any modern browser.
 - **Python Desktop Launcher** (standard library only):
   ```bash
   python3 armoniaplay_desktop.py --lang en /path/to/your/music
   ```
-- **Native macOS App (Apple Silicon & Intel):** Download `ArmoniaPlay-macOS-Kit.zip` from [Releases](../../releases), or build from [`macos/`](macos/):
+- **Native macOS App (Apple Silicon & Intel):** Download `ArmoniaPlay-macOS-Kit.zip` from [Releases](https://github.com/luciolibero/ArmoniaPlay/releases), or build from [`macos/`](macos/):
   ```zsh
   cd macos
   chmod +x Compila-ArmoniaPlay-Nativo.command
   ./Compila-ArmoniaPlay-Nativo.command
   ```
 - **Windows 10 / 11:** Download `ArmoniaPlay-Windows-Kit.zip` and double-click `Avvia-ArmoniaPlay-Silenzioso.vbs` (zero dependencies), or run `Compila-ArmoniaPlay-Windows.bat` to build a standalone `ArmoniaPlay.exe`.
-- **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.2.0_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
+- **Linux (Ubuntu/Debian/Fedora/Arch):** Download `ArmoniaPlay-Linux-Kit.zip` and either install the included `.deb` (`sudo apt install ./armoniaplay_2.2.1_all.deb`), run `./install-desktop.sh` (any distro, no root), or run `./armoniaplay.sh`.
 
 ## ☕ Supporta il progetto / Support ArmoniaPlay
 

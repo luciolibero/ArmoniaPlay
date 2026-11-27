@@ -10,7 +10,7 @@ OPZIONE A (Ubuntu / Debian / Mint / Pop!_OS) — PACCHETTO .deb
 Installazione di sistema con voce nel menu Applicazioni, icona e
 comando terminale "armoniaplay" (compatibile x86_64 e ARM64):
 
-  sudo apt install ./armoniaplay_2.2.0_all.deb
+  sudo apt install ./armoniaplay_2.2.1_all.deb
 
 Avvio dal menu Applicazioni ("ArmoniaPlay") oppure da terminale:
   armoniaplay
@@ -45,7 +45,7 @@ ENGLISH QUICK GUIDE — Linux
 ===================================================================
 
 OPTION A (Ubuntu / Debian / Mint — .deb package):
-  sudo apt install ./armoniaplay_2.2.0_all.deb
+  sudo apt install ./armoniaplay_2.2.1_all.deb
   armoniaplay --lang en /path/to/your/music
 
 OPTION B (Any Linux distro, no root required — desktop menu entry):
